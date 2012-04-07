@@ -1,3 +1,5 @@
+#! /usr/bin/python
+
 '''
 Simulation of promotions in a military
 PAPER: Promotions in ongoing hierarchical systems
