@@ -19,9 +19,10 @@ import math
 import copy
 
 """ UTILITIES """
-TOP_AGE = 10
+TOP_AGE = 7
 TOP_RANK = 4
 UNIT_SIZE = 4
+
 def toInt(numList):
     # Takes a list and returns it as integer
     if numList != []:
@@ -206,33 +207,34 @@ def promote_random(army, ruler, to_replace, ordered = True, seniority = True, to
     ''' Given army and list of vacants, promote individual at random'''
     vacants = []
     officers_to_be_replaced = [army[i] for i in to_replace]
+
     for officer in officers_to_be_replaced:
         
-        if ordered is True:
-            if seniority is True:
-                candidates = []
-                ll = 1
-                while len(candidates) is 0 and ll < (TOP_RANK - 1): # second condition is too wide
-                    avseniority = numpy.mean([h.seniority for h in army if h.rank is (officer.rank - ll)])
-                    candidates = [i for i,j in enumerate(army) if (j.rank == (officer.rank - ll) \
-                                                                   and j.age < TOP_AGE \
-                                                                   and j.seniority >= int(avseniority)) \
-                                                                   and (i not in (vacants + to_replace + to_exclude))]
-                    if ll > 1:
-                        print "Empty pool!"
-                    ll += 1
+        if ordered is True and seniority is True:
+            candidates = []
+            ll = 1
+            while len(candidates) is 0 and ll <= (officer.rank - 1):
+                avseniority = numpy.mean([h.seniority for h in army if h.rank is (officer.rank - ll)])
+                candidates = [i for i,j in enumerate(army) if (j.rank == (officer.rank - ll) \
+                                                               and j.age < TOP_AGE \
+                                                               and j.seniority >= int(avseniority)) \
+                                                               and (i not in (vacants + to_replace + to_exclude))]
+                if ll > 1:
+                    print "Empty pool!"
+                ll += 1
+                    
+        if ordered is True and seniority is False:
+            candidates = []
+            ll = 1
+            while len(candidates) is 0 and ll <= (officer.rank - 1): # second condition is too wide
+                candidates = [i for i,j in enumerate(army) if (j.rank == (officer.rank - ll) and j.age < TOP_AGE) and (i not in (vacants + to_replace + to_exclude))]
 
-            if seniority is False:
-                candidates = []
-                ll = 1
-                while len(candidates) is 0 and ll < (TOP_RANK - 1): # second condition is too wide
-                    candidates = [i for i,j in enumerate(army) if (j.rank == (officer.rank - ll) and j.age < TOP_AGE) and (i not in (vacants + to_replace + to_exclude))]
-                    if ll > 1:
-                        print "Empty pool!"
-                    ll += 1
+                if ll > 1:
+                    print "Empty pool!"
+                ll += 1
 
 
-        elif ordered is False:
+        if ordered is False:
             candidates = [i for i,j in enumerate(army) if (j.rank < officer.rank and j.age < TOP_AGE) and (i not in (vacants + to_replace + to_exclude))]
 
         vacants.append(random.choice(candidates))
@@ -251,21 +253,30 @@ def promote_closest(army, ruler, to_replace, ordered = True, seniority = True, t
     distances = [math.fabs(x.ideology - ruler.ideology) for i,x in enumerate(army)]
     for officer in officers_to_be_replaced:
 
-        if ordered is True:
-            if seniority is True:
-                candidates = []
-                ll = 1
-                while len(candidates) is 0 and ll < (TOP_RANK - 1): # second condition is too wide
-                    avseniority = numpy.mean([h.seniority for h in army if h.rank is (officer.rank - ll)])
-                    candidates = [i for i,j in enumerate(army) if (j.rank == (officer.rank - ll) \
-                                                                   and j.age < TOP_AGE \
-                                                                   and j.seniority >= int(avseniority)) \
-                                                                   and (i not in (vacants + to_replace + to_exclude))]
-                    if ll > 1:
-                        print "Empty pool!"
-                    ll += 1
+        if ordered is True and seniority is True:
+            candidates = []
+            ll = 1
+            while len(candidates) is 0 and ll < (TOP_RANK - 1): # second condition is too wide
+                avseniority = numpy.mean([h.seniority for h in army if h.rank is (officer.rank - ll)])
+                candidates = [i for i,j in enumerate(army) if (j.rank == (officer.rank - ll) \
+                                                               and j.age < TOP_AGE \
+                                                               and j.seniority >= int(avseniority)) \
+                                                               and (i not in (vacants + to_replace + to_exclude))]
+                if ll > 1:
+                    print "Empty pool!"
+                ll += 1
+                    
+        if ordered is True and seniority is False:
+            candidates = []
+            ll = 1
+            while len(candidates) is 0 and ll < (TOP_RANK - 1): # second condition is too wide
+                candidates = [i for i,j in enumerate(army) if (j.rank == (officer.rank - ll) and j.age < TOP_AGE) and (i not in (vacants + to_replace + to_exclude))]
+                if ll > 1:
+                    print "Empty pool!"
+                ll += 1
 
-        elif ordered is False:
+
+        if ordered is False:
             candidates = [i for i,j in enumerate(army) if (j.rank < officer.rank and j.age < TOP_AGE) and (i not in (vacants + to_replace + to_exclude))]
 
         restricted_distances = [j for i,j in enumerate(distances) if i in candidates]
@@ -288,19 +299,28 @@ def promote_ablest(army, ruler, to_replace, ordered = True, seniority = True, to
     qualities = [i.quality for i in army]
     for officer in officers_to_be_replaced:
 
-        if ordered is True:
-            if seniority is True:
-                candidates = []
-                ll = 1
-                while len(candidates) is 0 and ll < (TOP_RANK - 1): # second condition is too wide
-                    avseniority = numpy.mean([h.seniority for h in army if h.rank is (officer.rank - ll)])
-                    candidates = [i for i,j in enumerate(army) if (j.rank == (officer.rank - ll) \
-                                                                   and j.age < TOP_AGE \
-                                                                   and j.seniority >= int(avseniority)) \
-                                                                   and (i not in (vacants + to_replace + to_exclude))]
-                    if ll > 1:
-                        print "Empty pool!"
-                    ll += 1
+        if ordered is True and seniority is True:
+            candidates = []
+            ll = 1
+            while len(candidates) is 0 and ll < (TOP_RANK - 1): # second condition is too wide
+                avseniority = numpy.mean([h.seniority for h in army if h.rank is (officer.rank - ll)])
+                candidates = [i for i,j in enumerate(army) if (j.rank == (officer.rank - ll) \
+                                                               and j.age < TOP_AGE \
+                                                               and j.seniority >= int(avseniority)) \
+                                                               and (i not in (vacants + to_replace + to_exclude))]
+                if ll > 1:
+                    print "Empty pool!"
+                ll += 1
+                    
+        if ordered is True and seniority is False:
+            candidates = []
+            ll = 1
+            while len(candidates) is 0 and ll < (TOP_RANK - 1): # second condition is too wide
+                candidates = [i for i,j in enumerate(army) if (j.rank == (officer.rank - ll) and j.age < TOP_AGE) and (i not in (vacants + to_replace + to_exclude))]
+                if ll > 1:
+                    print "Empty pool!"
+                ll += 1
+
 
         if ordered is False:
             candidates = [i for i,j in enumerate(army) if (j.rank < officer.rank and j.age < TOP_AGE) and (i not in (vacants + to_replace + to_exclude))]
@@ -328,45 +348,28 @@ def promote(army, ruler, method, ordered, seniority):
         
     acc_to_promote = []
     new_ranks = []
+    new_units = []
     
     """ The army is full when the only vacants are in the base rank.
-    The loop accumulates all the changes before applying them in order to avoid double-promotions """
+     The loop accumulates all the changes before applying them in order to avoid double-promotions """
     
     while army_full is False:
         if method is 'closest':
-            if ordered is True:
-                if seniority is True:
-                    to_promote = promote_closest(army, ruler, to_replace, ordered = True, seniority = True, to_exclude = acc_to_promote)
-                elif seniority is False:
-                    to_promote = promote_closest(army, ruler, to_replace, ordered = True, seniority = False, to_exclude = acc_to_promote)
-            else:
-                to_promote = promote_closest(army, ruler, to_replace, ordered = False, seniority = True, to_exclude = acc_to_promote)
+            to_promote = promote_closest(army, ruler, to_replace, ordered = ordered, seniority = seniority, to_exclude = acc_to_promote)
 
-        elif method is 'ablest':
-            if ordered is True:
-                if seniority is True:
-                    to_promote = promote_ablest(army, ruler, to_replace, ordered = True, seniority = True, to_exclude = acc_to_promote)
-                elif seniority is False:
-                    to_promote = promote_ablest(army, ruler, to_replace, ordered = True, seniority = False, to_exclude = acc_to_promote)
-            else:
-                to_promote = promote_ablest(army, ruler, to_replace, ordered = False, seniority = True, to_exclude = acc_to_promote)
+        if method is 'ablest':
+                to_promote = promote_ablest(army, ruler, to_replace, ordered = ordered, seniority = seniority, to_exclude = acc_to_promote)
 
-        elif method is 'random':
-            if ordered is True:
-                if seniority is True:
-                    to_promote = promote_random(army, ruler, to_replace, ordered = True, seniority = True, to_exclude = acc_to_promote)
-                elif seniority is False:
-                    to_promote = promote_random(army, ruler, to_replace, ordered = True, seniority = False, to_exclude = acc_to_promote)
-            else:
-                to_promote = promote_random(army, ruler, to_replace, ordered = False, seniority = True, to_exclude = acc_to_promote)
-
-        # elif method is 'seniority':
-        #     to_promote = promote_seniority(army, ruler, to_replace, to_exclude = acc_to_promote)
+        if method is 'random':
+                to_promote = promote_random(army, ruler, to_replace, ordered = ordered, seniority = seniority, to_exclude = acc_to_promote)
             
         to_adjust = [i for i in to_promote if army[i].rank is not 1]
         acc_to_promote.extend(to_promote)
         ranks_to_replace = [army[i].rank for i in to_replace]
+        units_to_replace = [army[i].unit for i in to_replace]
+
         new_ranks.extend(ranks_to_replace)
+        new_units.extend(units_to_replace)
         
         to_replace = to_adjust
         army_full = len(to_replace) is 0
@@ -376,6 +379,7 @@ def promote(army, ruler, method, ordered, seniority):
         p = 0
         for i in range(len(acc_to_promote)):
             army[acc_to_promote[i]].rank = new_ranks[p]
+            army[acc_to_promote[i]].unit = new_units[p]
             army[acc_to_promote[i]].seniority = 0
             p += 1
 
@@ -394,24 +398,62 @@ def quality_army(army):
     E = sum([i.quality*i.rank for i in army])/N
     return(E/maxE)
 
+def generate_all_codes_ranks(rank):
+    codes = []
+    rank_size = UNIT_SIZE**(TOP_RANK - rank + 1)
+    start = generate_starting(rank)
+    for p in range(rank_size):
+        id = baseconvert(p, [str(j) for j in range(UNIT_SIZE)])
+        codes.append(start + int(id))
+    return(codes)
+
+def locate_missing_codes(army):
+    missing_code = []
+    for rank in range(1, TOP_RANK + 1):
+        army_codes = [i.unit for i in army if i.rank is rank]
+        coderank = generate_all_codes_ranks(rank)
+        for code in coderank:
+            if code not in army_codes:
+                missing_code.append(code)
+    return(missing_code)
+
+def locate_wrong_units(army):
+    wrong = []
+    rankunit = [(i.rank, i.unit) for i in army]
+    for uu in range(len(rankunit)):
+        expected = len(str(generate_starting(rankunit[uu][0])).strip())
+        actual = len(str(rankunit[uu][1]).strip())
+        if expected is not actual:
+            wrong.append(uu)
+    return(wrong)
+
 def reassign_units(army):
-    """ Reallocates units in the army """
-    U = UNIT_SIZE
-    r = 1
-    while r <= TOP_RANK:
-        p = 0
-        start = generate_starting(r)
-        for i in range(len(army)):
-            if army[i].rank is r:
-                id = baseconvert(p, [str(j) for j in range(U)])
-                army[i].unit = start + int(id)
-                p += 1
-        r += 1
+    # no need to verify that rank of the new unit matches unit number (if the function works well, it should complete only rank == 1)
+    missings = locate_missing_codes(army)
+    wrongs = locate_wrong_units(army)
+    for p in range(len(missings)):
+        # if army[wrongs[p]].rank 
+        army[wrongs[p]].unit = missings[p]
     return(army)
+
+# def reassign_units(army):
+#     """ Reallocates units in the army """
+#     U = UNIT_SIZE
+#     r = 1
+#     while r <= TOP_RANK:
+#         p = 0
+#         start = generate_starting(r)
+#         for i in range(len(army)):
+#             if army[i].rank is r:
+#                 id = baseconvert(p, [str(j) for j in range(U)])
+#                 army[i].unit = start + int(id)
+#                 p += 1
+#         r += 1
+#     return(army)
 
 def simulation_to_csv(sim, file):
     """ Writes a simulation file to a csv """
-    myfile = open(file, 'w')
+    myfile = open(file, 'wb')
     mywriter = csv.writer(myfile)
     fieldnames = ['it', 'id', 'age', 'rank', 'unit', 'quality', 'ideology']
     mywriter.writerow(fieldnames)
@@ -426,7 +468,7 @@ def simulation_to_csv(sim, file):
     print 'File successfully written to '+str(file)
 
 ''' DYNAMICS '''
-R = 250
+R = 50
 leonidas = Ruler(random.uniform(-1, 1))
 sparta = generate_army(ruler_ideology = leonidas.ideology)
 
@@ -435,7 +477,7 @@ def simulate(army, ruler, R, method, ordered, seniority):
     it = 1
     outcome = dict.fromkeys(range(1, R + 1))
 
-    while it < R:
+    while it <= R:
         print 'Iteration '+str(it)
         simarmy = promote(simarmy, ruler, method = method, ordered = ordered, seniority = seniority)
         simarmy = reassign_units(simarmy)
@@ -444,12 +486,12 @@ def simulate(army, ruler, R, method, ordered, seniority):
     return outcome
 
 for meth in ['random', 'closest', 'ablest']:
-    for ord in ['False', 'True']:
-        for sen in ['False', 'True']:
+    for ord in [False, True]:
+        for sen in [False, True]:
             Result = simulate(sparta, leonidas, R, method = str(meth), ordered = ord, seniority = sen)
-            simulation_to_csv(Result, 'data/sim_'+meth+'_'+str(sen)+'_'+str(ord)+'.csv')
+            simulation_to_csv(Result, '/Users/gonzalorivero/Dropbox/tese/promotions/data/sim_'+meth+'_'+str(sen)+'_'+str(ord)+'.csv')
 
-myfile = open("data/ruler.csv", 'w')
+myfile = open("/Users/gonzalorivero/Dropbox/tese/promotions/data/ruler.csv", 'w')
 mywriter = csv.writer(myfile)
 fieldnames = [leonidas.ideology]
 mywriter.writerow(fieldnames)
