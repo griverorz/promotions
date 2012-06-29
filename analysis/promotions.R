@@ -18,10 +18,10 @@ for (method in c("random", "closest", "ablest")) {
   completeFiles <- grep(method, list.files(wd))
   filesList <- lapply(list.files(wd, full.names = TRUE)[completeFiles], read.csv)
   simtmp <- do.call("rbind", filesList)
-  simtmp$ordered <- rep(c("False", "True"), each = nrow(simtmp)/2)
-  simtmp$seniority <- rep(c("False", "True"), each = nrow(simtmp)/4)
-  simtmp$method <- capitalize(method)
-  simtmp <- subset(simtmp, ordered == "True" | (ordered == "False" & seniority == "False"))
+  simtmp <- simtmp[(simtmp$ordered == "False" & simtmp$seniority == "True") == FALSE,]
+  levels(simtmp$ordered) <- c("Unordered", "Ordered")
+  levels(simtmp$seniority) <- c("No seniority", "Seniority")
+  simtmp$method <- capitalize(as.character(simtmp$method))
   sim[[i]] <- simtmp
   # recalculate utility for agents
   sim[[i]]$utility <- sim[[i]]$rank/sim[[i]]$age - abs(sim[[i]]$ideology - ruler)
@@ -49,15 +49,15 @@ names(ideology)[3] <- "orderprom"
 
 p <- ggplot(ideology, aes(x = it, y = V1, colour = factor(rank)))
 pq <- p + geom_line() + 
-  facet_grid(orderprom + seniority ~ method) +
+  facet_grid(seniority + orderprom ~ method) +
   scale_colour_discrete("Rank") +
-  scale_y_continuous(limits = c(-.9, .9)) +
+  scale_y_continuous(limits = c(-1, 1)) +
   geom_hline(y = ruler, linetype = 3, alpha = .7) +
   xlab("Iteration") +
-  ylab("Ideology") + 
-  opts(legend.position = "none")
-## file <- "~/Documents/wip/promotions/paper/figures/ideology.png"
-## ggsave(file, pq, width = 7, height = 9)
+  ylab("Ideology") 
+  ## opts(legend.position = "none")
+file <- "~/Documents/tese/promotions/paper/figures/ideology.pdf"
+ggsave(file, pq)
 
 # DISTRIBUTION OF QUALITY
 
@@ -67,11 +67,11 @@ pq <- p + geom_line() +
 
 # Total quality of the military (weighted by rank: weight is the actual rank 1-4) normalized by the maximum possible efficiency (all individuals with quality 1).
 N <- table(sim[[1]]$it)[1]/2
-maxE <- sum(sim[[1]][sim[[1]]$seniority == "True" & sim[[1]]$ordered == "True" & sim[[1]]$it == 1, "rank"])
+maxE <- sum(sim[[1]][sim[[1]]$seniority == "Seniority" & sim[[1]]$ordered == "Ordered" & sim[[1]]$it == 1, "rank"])
 
 efficiency <- vector("list", 3)
 for (i in 1:3) {
-  E <- sapply(split(sim[[i]], list(sim[[i]]$it, sim[[i]]$ordered, sim[[i]]$seniority, sim[[i]]$method)), function(x) sum(x$quality*x$rank))
+  E <- sapply(split(sim[[i]], list(sim[[i]]$it, sim[[i]]$ordered, sim[[i]]$seniority, sim[[i]]$method)), function(x) sum(x$quality*x$rank*x$order))
   efficiency[[i]] <- E/maxE
 }
 efficiency <- do.call("c", efficiency)
@@ -81,17 +81,19 @@ it_and_ind <- as.data.frame(it_and_ind)
 names(it_and_ind) <- c("it", "ordered", "seniority", "method")
 eff <- data.frame("it" = as.numeric(as.character(it_and_ind$it)), "ordered" = it_and_ind$ordered, 
                   "seniority" = it_and_ind$seniority, "efficiency" = efficiency, "method" = capitalize(as.character(it_and_ind$method)))
+senord <- paste(eff$ordered, eff$seniority)
+eff <- eff[senord != "Unordered Seniority",]
 
 p <- ggplot(eff, aes(x = it, y = efficiency, colour = factor(method)))
-pq <- p + geom_line() + 
-  facet_grid(ordered + seniority ~  method) +
-  scale_colour_discrete("Rank") +
-  scale_y_continuous(limits = c(0, 1)) +
+pq <- p + geom_line(colour = "black") + 
+  facet_grid(seniority + ordered ~  method) +
+  opts(legend.position = "none") +
+  ## scale_colour_discrete("Rank") +
+  ## scale_y_continuous(limits = c(0, 1)) +
   xlab("Iteration") +
-  ylab("Efficiency") + 
-  opts(legend.position = "none")
-## file <- paste("~/Documents/wip/promotions/paper/figures/efficiency.png", sep = "")
-## ggsave(file, pq, width = 7, height = 5)
+  ylab("Efficiency")
+file <- "~/Documents/tese/promotions/paper/figures/efficiency.pdf"
+ggsave(file, pq)
 
 
 # DISTRIBUTION OF UTILITY
@@ -100,22 +102,19 @@ for (i in 1:3) {
   utility[[i]] <- ddply(sim[[i]], c("it", "rank", "ordered", "seniority", "method"), function(df) mean(df$utility))
 }
 utility <- do.call("rbind", utility)
-utility_last <- subset(utility, it == 999)
 sim_utility <- do.call("rbind", sim)
 
-its <- seq(1, max(sim_utility$it), by = 10)
-p <- ggplot(sim_utility[sim_utility$it == its,], aes(x = factor(it), y = utility))
+its <- seq(1, max(sim_utility$it), by = 50)
+p <- ggplot(sim_utility[sim_utility$it %in% its,], aes(x = factor(it), y = utility))
 pq <- p + geom_boxplot(aes(fill = factor(rank))) + 
-  facet_grid(ordered + seniority ~ method) +
+  facet_grid(seniority + ordered ~ method) +
   scale_fill_discrete("Rank") +
   xlab("Iteration") +
   ylab("Utility")
-## file <- paste("~/Documents/wip/promotions/paper/figures/utility.png", sep = "")
-## ggsave(file, pq, width = 12, height = 5)
-
+file <- "~/Documents/tese/promotions/paper/figures/utility.pdf"
+ggsave(file, pq)
 
 # COUP RISK ASSOCIATED WITH EACH MILITARY MEN 
-
 # Measured by the quality of the army restricted to the children associated with officer i
 
 is_children <- function(parent, children) {
@@ -128,34 +127,41 @@ is_children <- function(parent, children) {
 # THESE LINES HAVE BEEN RUN ON A DIFFERENT COMPUTER AND THE RESULT SAVED TO WQUALITY.RDATA
 # the function has to be applied to a LOT of individuals so I divided the task into various batches
 # First I create a dataset with children for each possible unit
-nsoldiers <- table(sim[[1]]$it)[1]/2
+simred <- sim
+maxit <- max(sim[[1]]$it)
+## step <- 10
+for (i in 1:3) {
+  simred[[i]] <- sim[[i]][sim[[i]]$it %in% (maxit-250):maxit,]
+}
+
+nsoldiers <- table(simred[[1]]$it)[1]/3
 whosfamily <- vector("list", nsoldiers)
 for (i in 1:nsoldiers) {
-  whosfamily[[i]] <- is_children(sim[[1]][i, "unit"], 
-                                 sim[[1]][sim[[1]]$it == sim[[1]]$it[i] & 
-                                          sim[[1]]$seniority == "False" & sim[[1]]$ordered == "False", "unit"])
-  whosfamily[[i]] <- sim[[1]]$unit[1:nsoldiers][whosfamily[[i]]]
-  names(whosfamily)[i] <- sim[[1]]$unit[i]
+  whosfamily[[i]] <- is_children(simred[[1]][i, "unit"], 
+                                 simred[[1]][simred[[1]]$it == simred[[1]]$it[i] & 
+                                          simred[[1]]$seniority == "No seniority" & simred[[1]]$ordered == "Unordered", "unit"])
+  whosfamily[[i]] <- simred[[1]]$unit[1:nsoldiers][whosfamily[[i]]]
+  names(whosfamily)[i] <- simred[[1]]$unit[i]
 }
 
 # Then I calculate the measure for everybody (without counting their children)
 for (i in 1:3) {
-  sim[[i]]$wquality <- sim[[i]]$rank*sim[[i]]$quality
+  simred[[i]]$wquality <- simred[[i]]$rank*simred[[i]]$quality*simred[[i]]$order
 }
 
 # I then add the measure only for those individual who actually have children (no-soldiers)
 
 for (k in 1:3) {
-  officers <- seq(1, nrow(sim[[k]]))[nchar(sim[[k]]$unit) < nchar(max(sim[[k]]$unit))] #????
+  officers <- seq(1, nrow(simred[[k]]))[nchar(simred[[k]]$unit) < nchar(max(simred[[k]]$unit))] #????
   for (i in officers) {
                                         # This loop takes a while. Seat back and relax
-    ss <- whosfamily[[as.character(sim[[k]]$unit[i])]]
-    ss <- sim[[k]]$unit %in% ss & sim[[k]]$it == sim[[k]]$it[i] & sim[[k]]$seniority == sim[[k]]$seniority[i] & sim[[k]]$ordered == sim[[k]]$ordered[i]
-    sim[[k]]$wquality[i] <- sum(sim[[k]][ss, "rank"]*sim[[k]][ss, "quality"])
+    ss <- whosfamily[[as.character(simred[[k]]$unit[i])]]
+    ss <- simred[[k]]$unit %in% ss & simred[[k]]$it == simred[[k]]$it[i] & simred[[k]]$seniority == simred[[k]]$seniority[i] & simred[[k]]$ordered == simred[[k]]$ordered[i]
+    simred[[k]]$wquality[i] <- sum(simred[[k]][ss, "rank"]*simred[[k]][ss, "quality"]*simred[[k]][ss, "order"])
   }
 }
 
-sim <- do.call("rbind", sim)
+simred <- do.call("rbind", simred)
 
 # TEST ALLOCATIONS
 ## lowqgenerals <- sim[sim$rank == 4 & sim$wquality < 10,]
@@ -169,7 +175,7 @@ sim <- do.call("rbind", sim)
 ## ss <- sim[sim$unit %in% testchildren & sim$it == testit & sim$seniority == testsen & sim$method == testmethod , ]
 ## sum(ss$rank*ss$quality)
 
-p <- ggplot(sim, aes(x = it, y = wquality, colour = factor(rank)))
+p <- ggplot(simred, aes(x = it, y = wquality, colour = factor(rank)))
 pq <- p + geom_point(alpha = .6, size = 1, shape = 4) + 
   facet_grid(ordered + seniority ~ method) +
   scale_colour_discrete("Rank") +
@@ -189,7 +195,7 @@ pq <- p + geom_point(size = 1, shape = 1) +
 
 
 # INDIVIDUAL TRAJECTORIES # SHOULD TAKE THE MOST SIMILAR POSSIBLE INDIVIDUALS
-individuals <- sim[sim$it > 10 & sim$rank == 3,]
+individuals <- sim[sim$it > 20 & sim$rank == 4,]
 individuals$senord <- paste(individuals$seniority, individuals$ordered)
 split_individuals <- split(individuals, list(individuals$method, individuals$senord))
 
@@ -214,7 +220,7 @@ normalize <- function(x) {
 
 p <- ggplot(individual_path, aes(x = age, y = rank))
 pq <- p + geom_line() +
-  geom_point(aes(size = 1- normalize(individual_path$wutility)), shape = 1) +
+  geom_point(aes(size = order), shape = 1) +
   facet_grid(seniority + ordered ~ method) +
   xlab("Iteration") +
   ylab("Weighted utility") 
