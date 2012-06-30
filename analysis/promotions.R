@@ -114,54 +114,6 @@ pq <- p + geom_boxplot(aes(fill = factor(rank))) +
 file <- "~/Documents/tese/promotions/paper/figures/utility.pdf"
 ggsave(file, pq)
 
-# COUP RISK ASSOCIATED WITH EACH MILITARY MEN 
-# Measured by the quality of the army restricted to the children associated with officer i
-
-is_children <- function(parent, children) {
-  # given a parent unit, checks whether the unit children is a children or not
-  parent_nchar <- nchar(parent)
-  out <- ifelse(as.numeric(substr(children, 1, parent_nchar)) == parent, TRUE, FALSE) 
-  return(out)
-}
-
-# THESE LINES HAVE BEEN RUN ON A DIFFERENT COMPUTER AND THE RESULT SAVED TO WQUALITY.RDATA
-# the function has to be applied to a LOT of individuals so I divided the task into various batches
-# First I create a dataset with children for each possible unit
-simred <- sim
-maxit <- max(sim[[1]]$it)
-## step <- 10
-for (i in 1:3) {
-  simred[[i]] <- sim[[i]][sim[[i]]$it %in% (maxit-250):maxit,]
-}
-
-nsoldiers <- table(simred[[1]]$it)[1]/3
-whosfamily <- vector("list", nsoldiers)
-for (i in 1:nsoldiers) {
-  whosfamily[[i]] <- is_children(simred[[1]][i, "unit"], 
-                                 simred[[1]][simred[[1]]$it == simred[[1]]$it[i] & 
-                                          simred[[1]]$seniority == "No seniority" & simred[[1]]$ordered == "Unordered", "unit"])
-  whosfamily[[i]] <- simred[[1]]$unit[1:nsoldiers][whosfamily[[i]]]
-  names(whosfamily)[i] <- simred[[1]]$unit[i]
-}
-
-# Then I calculate the measure for everybody (without counting their children)
-for (i in 1:3) {
-  simred[[i]]$wquality <- simred[[i]]$rank*simred[[i]]$quality*simred[[i]]$order
-}
-
-# I then add the measure only for those individual who actually have children (no-soldiers)
-
-for (k in 1:3) {
-  officers <- seq(1, nrow(simred[[k]]))[nchar(simred[[k]]$unit) < nchar(max(simred[[k]]$unit))] #????
-  for (i in officers) {
-                                        # This loop takes a while. Seat back and relax
-    ss <- whosfamily[[as.character(simred[[k]]$unit[i])]]
-    ss <- simred[[k]]$unit %in% ss & simred[[k]]$it == simred[[k]]$it[i] & simred[[k]]$seniority == simred[[k]]$seniority[i] & simred[[k]]$ordered == simred[[k]]$ordered[i]
-    simred[[k]]$wquality[i] <- sum(simred[[k]][ss, "rank"]*simred[[k]][ss, "quality"]*simred[[k]][ss, "order"])
-  }
-}
-
-simred <- do.call("rbind", simred)
 
 # TEST ALLOCATIONS
 ## lowqgenerals <- sim[sim$rank == 4 & sim$wquality < 10,]
@@ -175,9 +127,12 @@ simred <- do.call("rbind", simred)
 ## ss <- sim[sim$unit %in% testchildren & sim$it == testit & sim$seniority == testsen & sim$method == testmethod , ]
 ## sum(ss$rank*ss$quality)
 
-p <- ggplot(simred, aes(x = it, y = wquality, colour = factor(rank)))
+### PLOT WEIGHTED QUALITY OF EACH INDIVIDUAL
+sim <- do.call("rbind", sim)
+
+p <- ggplot(sim, aes(x = it, y = wquality, colour = factor(rank)))
 pq <- p + geom_point(alpha = .6, size = 1, shape = 4) + 
-  facet_grid(ordered + seniority ~ method) +
+  facet_grid(seniority + ordered ~ method) +
   scale_colour_discrete("Rank") +
   xlab("Iteration") +
   ylab("Capacity")
@@ -220,7 +175,7 @@ normalize <- function(x) {
 
 p <- ggplot(individual_path, aes(x = age, y = rank))
 pq <- p + geom_line() +
-  geom_point(aes(size = order), shape = 1) +
+  geom_point(aes(size = wquality), shape = 1) +
   facet_grid(seniority + ordered ~ method) +
   xlab("Iteration") +
   ylab("Weighted utility") 

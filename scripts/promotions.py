@@ -19,7 +19,7 @@ import math
 import copy
 
 """ UTILITIES """
-TOP_AGE = 10
+TOP_AGE = 15
 TOP_RANK = 4
 UNIT_SIZE = 3
 R = 500
@@ -86,26 +86,29 @@ class Soldier(object):
 
     id_generator = itertools.count(1)
     
-    def __init__(self, rank, seniority, age, quality, ideology, unit, ruler_ideology):
+    def __init__(self, rank, seniority, age, quality, wquality, ideology, unit, ruler_ideology):
         self.id = next(self.id_generator)
         self.rank = rank
         self.seniority = seniority
         self.age = age
         self.quality = quality
+        self.wquality = self.quality
         self.ideology = ideology
         self.unit = unit
         self.ruler_ideology = ruler_ideology
 
     def __str__(self):
         characteristics = '\nID: '+ str(self.id) + '\nRank: ' + str(self.rank)  + '\nSeniority: ' + str(self.seniority) + \
-            '\nAge: ' + str(self.age) + '\nQuality: ' + str(self.quality) + '\nIdeology: ' + str(self.ideology) + '\nUnit: ' + str(self.unit) + '\n' 
+            '\nAge: ' + str(self.age) + '\nQuality: ' + str(self.quality) + '\nWQuality: ' + str(self.wquality) + \
+            '\nIdeology: ' + str(self.ideology) + '\nUnit: ' + str(self.unit) + '\n' 
         return characteristics
         
     # @staticmethod
     # def status():
     #     print('\nTotal army size is ', Soldier.total)
     def report(self):
-        return({'id': self.id, 'rank': self.rank, 'age': self.age, 'quality': self.quality, 'ideology': self.ideology, 'unit': self.unit, 'seniority': self.seniority})
+        return({'id': self.id, 'rank': self.rank, 'age': self.age, 'quality': self.quality, 'wquality': self.wquality, \
+                'ideology': self.ideology, 'unit': self.unit, 'seniority': self.seniority})
     
     def pass_time(self):
         self.age += 1
@@ -182,8 +185,9 @@ def generate_army(N = UNIT_SIZE**TOP_RANK, K = TOP_AGE, U = UNIT_SIZE, ruler_ide
                 # def __init__(self, rank, age, quality, ideology, unit, ruler_ideology):
                 age = int(round(numpy.random.beta(fill_rank, (TOP_RANK + 1) - fill_rank, 1) * (TOP_AGE - 1) + 1))
                 seniority = random.choice(range(min(age, fill_rank), max(age, fill_rank) + 1)) # Double check
+                quality = random.uniform(0, 1)
                 captain = Soldier(fill_rank, seniority, age,
-                                  random.uniform(0, 1), random.uniform(-1, 1), start + int(id), ruler_ideology)
+                                  quality, quality, random.uniform(-1, 1), start + int(id), ruler_ideology)
                 army.append(captain)
             population_rank = population_rank/U
             fill_rank += 1
@@ -221,6 +225,27 @@ def order(x):
 #             max_seniority = numpy.array(restricted_seniority).max()
 #             vacants.append(candidates[restricted_seniority.index(max_seniority)])
 #     return(vacants)
+
+def generate_children_codes(unit):
+    final_codes = []
+    missing_levels = TOP_RANK - len(str(unit).strip())
+    for lvl in range(1, missing_levels + 1):
+        additional_codes = itertools.repeat(range(1, UNIT_SIZE + 1), lvl)
+        codes_to_add = list(itertools.product(*list(additional_codes)))
+        pasted_codes_to_add = [reduce(lambda x, y: str(x)+str(y), i) for i in codes_to_add]
+        final_codes.append(pasted_codes_to_add)
+    children = [int(str(unit)+str(i)) for i in list(itertools.chain(*final_codes))]
+    return(children)    
+
+def calculate_wquality(army):
+    wquality = []
+    for soldier in army:
+        wquality_own = soldier.quality * soldier.rank * soldier.seniority
+        children = generate_children_codes(soldier.unit)
+        wquality_children = [i.quality * i.rank * i.seniority for i in army if i.unit in children]
+        wquality_soldier = sum(wquality_children) + wquality_own
+        soldier.wquality = wquality_soldier
+    return(army)
 
 def promote_random(army, ruler, to_replace, ordered, seniority, to_exclude = []):
     ''' Given army and list of vacants, promote individual at random'''
@@ -265,6 +290,59 @@ def promote_random(army, ruler, to_replace, ordered, seniority, to_exclude = [])
         vacants.append(random.choice(candidates))
     return(vacants)
 
+# def promote_minrisk(army, ruler, to_replace, ordered, seniority, to_exclude = []):
+#     ''' Given army and list of vacants, promote individual that is closest to the ruler'''
+#     vacants = []
+#     highest_rank = max([i.rank for i in army])
+#     # oo = order([army[i].rank for i in to_replace])
+#     # oo.reverse()
+#     # to_replace = [to_replace[i] for i in oo]
+#     officers_to_be_replaced = [army[i] for i in to_replace]
+#     distances = [math.fabs(x.ideology - ruler.ideology) for i,x in enumerate(army)]
+#     for officer in officers_to_be_replaced:
+
+#         if ordered is True:
+#             if seniority is True:
+#                 candidates = []
+#                 ll = 0
+#                 rr = 1
+#                 while len(candidates) is 0 and (rr <= (officer.rank - 1) and ll <= 3):
+#                     qq = [.75, .5, .25, 0]
+#                     avseniority = percentile([h.seniority for h in army if h.rank is (officer.rank - rr)], qq[ll])
+#                     candidates = [i for i,j in enumerate(army) if (j.rank == (officer.rank - rr) \
+#                                                                    and j.age < TOP_AGE \
+#                                                                    and j.seniority >= float(avseniority)) \
+#                                                                    and (i not in (vacants + to_replace + to_exclude))]
+#                     # print(str(ll)+"\n"+"officer: "+str(officer.id)+"\n"+"to_replace: "+str(to_replace)+"\n"+"to_exclude: "+str(to_exclude)+"\n"+"vacants: "+str(vacants)+"\n")
+#                     if ll < 3:
+#                         ll += 1
+#                     else:
+#                         print "Empty pool!"
+#                         rr += 1
+#                         ll = 0
+                    
+#             else:
+#                 candidates = []
+#                 rr = 1
+#                 while len(candidates) is 0 and rr <= (officer.rank - 1): # second condition is too wide
+#                     candidates = [i for i,j in enumerate(army) if (j.rank == (officer.rank - rr) \
+#                                                                    and j.age < TOP_AGE) \
+#                                                                    and (i not in (vacants + to_replace + to_exclude))]
+#                     if len(candidates) is 0:
+#                         print "Empty pool!"
+#                         rr += 1
+
+
+#         else:
+#             candidates = [i for i,j in enumerate(army) if (j.rank < officer.rank and j.age < TOP_AGE) and (i not in (vacants + to_replace + to_exclude))]
+
+#         restricted_distances = [j for i,j in enumerate(distances) if i in candidates]
+
+#         if len(restricted_distances) > 0:
+#             restricted_distances = numpy.array(restricted_distances)
+#             min_distance = restricted_distances.min()
+#             vacants.append((distances == min_distance).nonzero()[0][0]) # this indexing is odd, isn't it?
+#     return(vacants)
 
 def promote_closest(army, ruler, to_replace, ordered, seniority, to_exclude = []):
     ''' Given army and list of vacants, promote individual that is closest to the ruler'''
@@ -503,14 +581,15 @@ def simulation_to_csv(sim, file, method, ordered, seniority):
     """ Writes a simulation file to a csv """
     myfile = open(file, 'wb')
     mywriter = csv.writer(myfile)
-    fieldnames = ['it', 'id', 'age', 'rank', 'order', 'unit', 'quality', 'ideology', 'method', 'ordered', 'seniority']
+    fieldnames = ['it', 'id', 'age', 'rank', 'order', 'unit', 'quality',
+                  'wquality', 'ideology', 'method', 'ordered', 'seniority']
     mywriter.writerow(fieldnames)
     R = len(sim)
     for i in range(1, R):
         iteration = [j.report() for j in sim[i]]
         for k in range(len(iteration)):
             current_row = [i, iteration[k]['id'], iteration[k]['age'], iteration[k]['rank'], iteration[k]['seniority'], iteration[k]['unit'],
-                           iteration[k]['quality'], iteration[k]['ideology'], method, ordered, seniority]
+                           iteration[k]['quality'], iteration[k]['wquality'], iteration[k]['ideology'], method, ordered, seniority]
             mywriter.writerow(current_row)
     myfile.close()
     print 'File successfully written to '+str(file)
@@ -524,11 +603,14 @@ def simulate(army, ruler, R, method, ordered, seniority):
     simarmy = copy.deepcopy(army)
     it = 1
     outcome = dict.fromkeys(range(1, R + 1))
-
+    outcome[it] = copy.deepcopy(simarmy)
+    it += 1
+    
     while it <= R:
         print 'Iteration '+str(it)
         simarmy = promote(simarmy, ruler, method, ordered, seniority)
         simarmy = reassign_units(simarmy)
+        simarmy = calculate_wquality(simarmy)
         outcome[it] = copy.deepcopy(simarmy)
         it += 1
     return outcome
