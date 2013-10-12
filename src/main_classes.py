@@ -9,6 +9,7 @@ import itertools
 import numpy as np
 from collections import defaultdict
 from copy import deepcopy
+from igraph import Graph
 
 class Soldier(object):
     """ A soldier """
@@ -24,6 +25,7 @@ class Soldier(object):
         self.ideology = ideology
         self.unit = unit
         self.alive = True
+        self.utility = (age - rank)*quality*seniority
 
     def __str__(self):
         chars = 'ID: '+ str(self.id) +                    \
@@ -82,7 +84,7 @@ class Soldier(object):
         self.alive = False
 
     def reuse(self, unit):
-        self.age = int(round(np.random.gamma(1, 2, 1)))
+        self.age = 1 + int(round(np.random.gamma(1, 2, 1)))
         self.rank = 1
         self.quality = random.uniform(0, 1)
         self.ideology = random.uniform(-1, 1)
@@ -121,7 +123,7 @@ class Army(Soldier):
         chars = "Soldiers: " + str(self.N) + \
                 "\nTop age: " + str(self.top_age) + \
                 "\nUnit size: " + str(self.unit_size) + \
-                "\nTop rank: " + str(self.top_rank)
+                "\nTop rank: " + str(self.top_rank) 
         return chars
         
     def get_rank(self, rank):
@@ -192,8 +194,10 @@ class Army(Soldier):
                 id_pool = [i.id for i in pool if i.quality is refval][0]
                 idx = self.lookupid(id_pool)
             if method is "ideology":
-                refval = min([(i.ideology - self.ruler_ideology) for i in pool])
-                id_pool = [i.id for i in pool if (i.ideology - self.ruler_ideology) is refval][0]
+                ideologies = [(i.ideology - self.ruler_ideology) for i in pool]
+                refval = min(ideologies)
+                idx = ideologies.index(refval)
+                id_pool = pool[idx].id
                 idx = self.lookupid(id_pool)
             if method is "random":
                 refval = random.choice([i.id for i in pool])
@@ -245,6 +249,21 @@ class Army(Soldier):
     def recruit(self):
         self.reuse_officers()
         self.reuse_soldiers()
+    
+    def network(self, distance = 1/5.):
+        tr = self.unit_size
+        nw = np.zeros((tr, tr), int)
+        generals = self.get_rank(self.top_rank)
+        for i in range(len(generals)):
+            for j in range(i):
+                if i is j:
+                    nw[i, j] = 0
+                else:
+                    if generals[i].ideology - generals[j].ideology < distance:
+                        nw[i, j], nw[j, i] = 1, 1
+                    else:
+                        nw[i, j], nw[j, i] = 0, 0
+        return Graph.Adjacency(nw.tolist()).as_undirected()
 
     def pass_time(self):
         for i in self.soldiers:
