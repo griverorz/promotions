@@ -11,7 +11,7 @@ def toInt(numList):
     if numList != []:
         s = ''.join(map(str, numList))
         return int(s)
-
+        
 def percentile(N, P):
     """
     Find the percentile of a list of values

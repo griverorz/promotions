@@ -15,7 +15,7 @@ class Soldier(object):
     """ A soldier """
 
     id_generator = itertools.count(1)
-    
+
     def __init__(self, rank, seniority, age, quality, ideology, unit):
         self.id = next(self.id_generator)
         self.rank = rank
@@ -36,7 +36,7 @@ class Soldier(object):
                 '\nIdeology: ' + str(self.ideology) +     \
                 '\nUnit: ' + str(self.unit)
         return chars
-        
+
     def report(self):
         return({'id': self.id,
                 'rank': self.rank,
@@ -45,7 +45,7 @@ class Soldier(object):
                 'ideology': self.ideology,
                 'unit': self.unit,
                 'seniority': self.seniority})
-    
+
     def pass_time(self, topage):
         self.age += 1
         self.seniority += 1
@@ -56,13 +56,13 @@ class Soldier(object):
             to_kill = int(np.random.binomial(1, prob, 1))
             if to_kill is 1:
                 self.kill()
-        
+
     def will_retire(self, topage):
         if self.age == topage:
             return(True)
         else:
             return(False)
-    
+
     def is_candidate(self, ordered, rank_open, topage, slack = 1):
         isc = False
         if ordered is False:
@@ -72,7 +72,7 @@ class Soldier(object):
             if self.rank == (rank_open - slack) and self.age < topage and self.alive:
                 isc = True
         return isc
-        
+
     def promote(self, rank_open = None):
         if rank_open is None:
             self.rank += 1
@@ -108,7 +108,7 @@ class Army(Soldier):
     """ A collection of soldiers """
 
     def __init__(self, ruler, top_age, unit_size, top_rank):
-        """ Generates army of size N (at the base level) with K levels. 
+        """ Generates army of size N (at the base level) with K levels.
         Each unit being of size U """
         self.N = unit_size**top_rank
         self.top_age = top_age
@@ -123,9 +123,9 @@ class Army(Soldier):
         chars = "Soldiers: " + str(self.N) + \
                 "\nTop age: " + str(self.top_age) + \
                 "\nUnit size: " + str(self.unit_size) + \
-                "\nTop rank: " + str(self.top_rank) 
+                "\nTop rank: " + str(self.top_rank)
         return chars
-        
+
     def get_rank(self, rank):
         rank_list = [i for i in self.soldiers if i.rank == rank]
         return(rank_list)
@@ -142,8 +142,8 @@ class Army(Soldier):
         topage = self.top_age
         for i in self.soldiers:
             avail_list.append(i.will_retire(topage))
-        retirees = [val for pos, val in enumerate(self.soldiers) 
-                    if avail_list[pos] and val.rank > 1]        
+        retirees = [val for pos, val in enumerate(self.soldiers)
+                    if avail_list[pos] and val.rank > 1]
         ## sort them by rank
         retirees = sorted(retirees, key = lambda x: x.rank, reverse = True)
         return(retirees)
@@ -163,9 +163,9 @@ class Army(Soldier):
         topage = self.top_age
         for i in self.soldiers:
             pool_list.append(i.is_candidate(ordered, open_rank, topage, slack))
-        candidates = [val for pos, val in enumerate(self.soldiers) 
+        candidates = [val for pos, val in enumerate(self.soldiers)
                       if pool_list[pos] is True]
-        return(candidates)            
+        return(candidates)
 
     def lookupid(self, value):
         id_army = [i.id for i in self.soldiers]
@@ -178,12 +178,11 @@ class Army(Soldier):
             open_rank = openpos[0].rank
             pool = deepcopy(self.up_for_promotion(constraints, open_rank, slack = 1))
             pool = list(set(pool).difference(set(unavail)))
-            
+
             while not pool:
-                slack = 2
-                print("No one is up! Looking in the next rank.")
-                pool = self.up_for_promotion(constraints, open_rank, slack)
+                print("No one is up for promotion! Looking up in the next rank.")
                 slack += 1
+                pool = self.up_for_promotion(constraints, open_rank, slack)
 
             if method is "seniority":
                 refval = max([i.seniority for i in pool])
@@ -206,7 +205,7 @@ class Army(Soldier):
 
             tmp = deepcopy(self.soldiers[idx])
             self.soldiers[idx].promote(open_rank)
-            self.soldiers[idx].unit = openpos[0].unit 
+            self.soldiers[idx].unit = openpos[0].unit
             unavail.append(self.soldiers[idx])
 
             openpos.pop(0)
@@ -227,10 +226,10 @@ class Army(Soldier):
                     dead_officers.append(i)
 
         idle_codes = [i.unit for i in dead_soldiers]
-        
+
         for i, officer in enumerate(dead_officers):
             idx = self.soldiers.index(officer)
-            self.soldiers[idx].reuse(idle_codes[i])              
+            self.soldiers[idx].reuse(idle_codes[i])
 
     def reuse_soldiers(self):
         dead_soldiers = []
@@ -240,7 +239,7 @@ class Army(Soldier):
                     dead_soldiers.append(i)
 
         idle_codes = [i.unit for i in dead_soldiers]
-        
+
         for i, soldier in enumerate(dead_soldiers):
             idx = self.soldiers.index(soldier)
             uu = self.soldiers[idx].unit
@@ -249,7 +248,7 @@ class Army(Soldier):
     def recruit(self):
         self.reuse_officers()
         self.reuse_soldiers()
-    
+
     def network(self, distance = 1/5.):
         tr = self.unit_size
         nw = np.zeros((tr, tr), int)
@@ -268,4 +267,4 @@ class Army(Soldier):
     def pass_time(self):
         for i in self.soldiers:
             Soldier.pass_time(i, self.top_age)
-    
+

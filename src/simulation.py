@@ -17,10 +17,10 @@ import math
 import psycopg2
 from copy import deepcopy
 import igraph 
+
 ## auxiliary files
 import helper_functions
 import main_classes
-
 
 def simulate(army, ruler, R, method, constraints):
     full_sim = dict.fromkeys(range(R))
@@ -84,18 +84,19 @@ RULER_IDEOLOGY double precision);
 cur.close()
 conn.close()
 
-R = 100
+R = 200
 leonidas = Ruler(0)
-sparta = Army(leonidas, 20, 7, 4)
+original_sparta = Army(leonidas, 20, 4, 4)
 
-for method in ['ideology', 'random', 'seniority']:
+for method in ['ideology', 'random', 'quality', 'seniority']:
     for constraint in ['none', 'ordered']:
+        sparta = deepcopy(original_sparta)
         print('Simulation: ' + str(method) + ' ' + str(constraint))
-        out = simulate(sparta, leonidas, R, method, constraint)
+        simp = simulate(sparta, leonidas, R, method, constraint)
         fname = '/Users/gonzalorivero/Documents/wip/promotions/dta/sim' + \
-                str(method) + '_' + str(constraint) + '.txt' 
-     
-        simulation_to_csv(leonidas, out, method, constraint, fname)
+            str(method) + '_' + str(constraint) + '.txt' 
+    
+        simulation_to_csv(leonidas, simp, method, constraint, fname)
         
         conn = psycopg2.connect("dbname=promotions")
         cur = conn.cursor()
