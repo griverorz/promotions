@@ -86,24 +86,25 @@ conn.close()
 
 R = 200
 leonidas = Ruler(0)
-original_sparta = Army(leonidas, 30, 10, 4)
+original_sparta = Army(leonidas, 30, 9, 4)
 
 for method in ['ideology', 'random', 'quality', 'seniority']:
     for constraint in ['none', 'ordered']:
-        sparta = deepcopy(original_sparta)
-        print('Simulation: ' + str(method) + ' ' + str(constraint))
-        simp = simulate(sparta, leonidas, R, method, constraint)
-        fname = '/Users/gonzalorivero/Documents/wip/promotions/dta/sim' + \
-            str(method) + '_' + str(constraint) + '.txt' 
-    
-        simulation_to_csv(leonidas, simp, method, constraint, fname)
-        
-        conn = psycopg2.connect("dbname=promotions")
-        cur = conn.cursor()
-        cur.execute('COPY "simp" FROM %s CSV;', [str(fname)])
-        conn.commit()
-        cur.close()
-        conn.close()
+        for from_within in [True, False]:
+            sparta = deepcopy(original_sparta)
+            print('Simulation: ' + str(method) + ' ' + str(constraint))
+            simp = simulate(sparta, leonidas, R, method, constraint, from_within)
+            fname = '/Users/gonzalorivero/Documents/wip/promotions/dta/sim' + \
+                    str(method) + '_' + str(constraint) + '.txt' 
+            
+            simulation_to_csv(leonidas, simp, method, constraint, fname)
+            
+            conn = psycopg2.connect("dbname=promotions")
+            cur = conn.cursor()
+            cur.execute('COPY "simp" FROM %s CSV;', [str(fname)])
+            conn.commit()
+            cur.close()
+            conn.close()
 
 
 

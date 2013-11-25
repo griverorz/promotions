@@ -70,16 +70,17 @@ class Soldier(object):
                 if self.rank < rank_open and self.age < topage and self.alive:
                     isc = True
             elif ordered is True:
-                if self.rank >= (rank_open - slack) and self.age < topage and self.alive:
+                if self.rank == (rank_open - slack) and self.age < topage and self.alive:
                     isc = True
             return isc
         else:
-            is_sub = unit in possible_superiors(self.unit)
+            # is_sub = unit in possible_superiors(self.unit)
+            is_sub = str(unit)[0] is str(self.unit)[0]
             if ordered is False:
                 if is_sub and self.rank < rank_open and self.age < topage and self.alive:
                     isc = True
             elif ordered is True:
-                if is_sub and self.rank >= (rank_open - slack) and self.age < topage and self.alive:
+                if is_sub and self.rank == (rank_open - slack) and self.age < topage and self.alive:
                     isc = True
             return isc
 
@@ -160,10 +161,6 @@ class Army(Soldier):
         return(retirees)
 
     def up_for_promotion(self, constraints, open_rank, open_unit = None, slack = 1):
-        ### methods
-        # random, quality, proximity, seniority
-        ### constraints
-        # ordered
         known_constraints = {
             ## ordered, seniority
             'ordered': True,
@@ -206,7 +203,8 @@ class Army(Soldier):
 
     def get_superior(self, soldier):
         if soldier.rank is self.top_rank:
-            return("I'm the highest rank, damnit!")
+            return soldier
+            # return("I'm the highest rank, damnit!")
         else:
             unit = str(soldier.unit)
             superior_unit = int(unit[0:(len(unit) - 1)])
@@ -220,6 +218,9 @@ class Army(Soldier):
             slack = 1
             open_rank = openpos[0].rank
             open_unit = None
+            superior_ideology = self.get_superior(openpos[0]).ideology
+            if open_rank is self.top_rank:
+                superior_ideology = self.ruler_ideology
             if from_within is True:
                 open_unit = openpos[0].unit
             pool = deepcopy(self.up_for_promotion(constraints, open_rank, open_unit, slack))
@@ -239,7 +240,8 @@ class Army(Soldier):
                 id_pool = [i.id for i in pool if i.quality is refval][0]
                 idx = self.lookupid(id_pool)
             if method is "ideology":
-                ideologies = [(i.ideology - self.ruler_ideology) for i in pool]
+                # ideologies = [(i.ideology - self.ruler_ideology) for i in pool]
+                ideologies = [(i.ideology - superior_ideology) for i in pool]
                 refval = min(ideologies)
                 idx = ideologies.index(refval)
                 id_pool = pool[idx].id
