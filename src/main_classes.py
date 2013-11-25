@@ -63,15 +63,26 @@ class Soldier(object):
         else:
             return(False)
 
-    def is_candidate(self, ordered, rank_open, topage, slack = 1):
+    def is_candidate(self, ordered, rank_open, topage, unit = None, slack = 1):
         isc = False
-        if ordered is False:
-            if self.rank < rank_open and self.age < topage and self.alive:
-                isc = True
-        elif ordered is True:
-            if self.rank == (rank_open - slack) and self.age < topage and self.alive:
-                isc = True
-        return isc
+        if unit is None:
+            if ordered is False:
+                if self.rank < rank_open and self.age < topage and self.alive:
+                    isc = True
+            elif ordered is True:
+                if self.rank >= (rank_open - slack) and self.age < topage and self.alive:
+                    isc = True
+            return isc
+        else:
+            is_sub = unit in possible_superiors(self.unit)
+            if ordered is False:
+                if is_sub and self.rank < rank_open and self.age < topage and self.alive:
+                    isc = True
+            elif ordered is True:
+                if is_sub and self.rank >= (rank_open - slack) and self.age < topage and self.alive:
+                    isc = True
+            return isc
+
 
     def promote(self, rank_open = None):
         if rank_open is None:
@@ -142,13 +153,13 @@ class Army(Soldier):
         topage = self.top_age
         for i in self.soldiers:
             avail_list.append(i.will_retire(topage))
-        retirees = [val for pos, val in enumerate(self.soldiers)
+        retirees = [val for pos, val in enumerate(self.soldiers) 
                     if avail_list[pos] and val.rank > 1]
         ## sort them by rank
         retirees = sorted(retirees, key = lambda x: x.rank, reverse = True)
         return(retirees)
 
-    def up_for_promotion(self, constraints, open_rank, slack = 1):
+    def up_for_promotion(self, constraints, open_rank, open_unit = None, slack = 1):
         ### methods
         # random, quality, proximity, seniority
         ### constraints
@@ -162,7 +173,7 @@ class Army(Soldier):
         pool_list = []
         topage = self.top_age
         for i in self.soldiers:
-            pool_list.append(i.is_candidate(ordered, open_rank, topage, slack))
+            pool_list.append(i.is_candidate(ordered, open_rank, topage, open_unit, slack))
         candidates = [val for pos, val in enumerate(self.soldiers)
                       if pool_list[pos] is True]
         return(candidates)
@@ -183,7 +194,7 @@ class Army(Soldier):
             ids = [i.unit for i in self.soldiers]
             for i in children:
                 idx = ids.index(int(i))
-                subs = self.find_subordinates(self.soldiers(idx))
+                subs = self.find_subordinates(self.soldiers[idx])
                 subs_list.append(subs)
             return subs_list
 
@@ -203,17 +214,21 @@ class Army(Soldier):
             idx = ids.index(superior_unit)
             return self.soldiers[idx]
 
-    def promote(self, method, constraints, openpos):
+    def promote(self, method, constraints, from_within, openpos):
         unavail = []
         while len(openpos) > 0:
+            slack = 1
             open_rank = openpos[0].rank
-            pool = deepcopy(self.up_for_promotion(constraints, open_rank, slack = 1))
+            open_unit = None
+            if from_within is True:
+                open_unit = openpos[0].unit
+            pool = deepcopy(self.up_for_promotion(constraints, open_rank, open_unit, slack))
             pool = list(set(pool).difference(set(unavail)))
-
+            
             while not pool:
                 print("No one is up for promotion! Looking up in the next rank.")
                 slack += 1
-                pool = self.up_for_promotion(constraints, open_rank, slack)
+                pool = self.up_for_promotion(constraints, open_rank, None, slack)
 
             if method is "seniority":
                 refval = max([i.seniority for i in pool])

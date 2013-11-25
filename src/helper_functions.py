@@ -1,5 +1,7 @@
 #! /usr/bin/python
 
+import collections
+
 def argmax(lst):
      return lst.index(max(lst))    
 
@@ -68,3 +70,59 @@ def generate_first_code(toprank, level):
     for i in range(ll):
         out.append(10**i)
     return sum(out)
+
+def generate_base_codes(toprank, unitsize):
+    list_codes = []
+    start = generate_first_code(toprank, 1)
+    pop_rank = unitsize**toprank
+        
+    for i in range(pop_rank):
+        id = baseconvert(i, [str(j) for j in range(unitsize)])
+        list_codes.append(start + int(id))
+    return(list_codes)
+
+def populate_army(topage, toprank, unitsize):
+    """ Generates army of size N (at the base level) with K levels. 
+        Each unit being of size U
+    """
+    army = []
+    fill_rank = 1
+    while fill_rank <= toprank:
+        
+        start = generate_first_code(toprank, fill_rank)
+        pop_rank = unitsize**(toprank - fill_rank + 1)
+        
+        for i in range(pop_rank):
+            id = baseconvert(i, [str(j) for j in range(unitsize)])
+            ## Senior officers tend to be older
+            refbase = (toprank + 1) - fill_rank
+            refscale = topage - 1
+            age = int(round(np.random.beta(fill_rank, refbase, 1) * refscale + 1))
+            seniority = random.choice(range(min(age, fill_rank), 
+                                            max(age, fill_rank) + 1))
+            quality = random.uniform(0, 1)
+            ## Put everything together
+            captain = Soldier(fill_rank, 
+                              seniority,
+                              age,
+                              quality, 
+                              random.uniform(-1, 1),
+                              start + int(id))
+            army.append(captain)
+        pop_rank = pop_rank/unitsize
+        fill_rank += 1
+    return army
+
+def flatten(x):
+    ## http://stackoverflow.com/questions/2158395/flatten-an-irregular-list-of-lists-in-python
+    if isinstance(x, collections.Iterable):
+        return [a for i in x for a in flatten(i)]
+    else:
+        return [x]
+
+def possible_superiors(code):
+    out = []
+    while len(str(code)) > 1:
+        code = code/10
+        out.append(code)
+    return out

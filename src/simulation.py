@@ -22,7 +22,7 @@ import igraph
 import helper_functions
 import main_classes
 
-def simulate(army, ruler, R, method, constraints):
+def simulate(army, ruler, R, method, constraints, from_within):
     full_sim = dict.fromkeys(range(R))
     full_sim[0] = deepcopy(army)
 
@@ -30,7 +30,7 @@ def simulate(army, ruler, R, method, constraints):
     while it < R:
         print("Iteration " + str(it))
         openpos = army.up_for_retirement()
-        army.promote(method, constraints, openpos)
+        army.promote(method, constraints, from_within, openpos)
         army.pass_time()
         army.recruit()
         full_sim[it] = deepcopy(army)
@@ -86,7 +86,7 @@ conn.close()
 
 R = 200
 leonidas = Ruler(0)
-original_sparta = Army(leonidas, 20, 4, 4)
+original_sparta = Army(leonidas, 30, 10, 4)
 
 for method in ['ideology', 'random', 'quality', 'seniority']:
     for constraint in ['none', 'ordered']:
