@@ -92,10 +92,10 @@ for method in ['ideology', 'random', 'quality', 'seniority']:
     for constraint in ['none', 'ordered']:
         for from_within in [True, False]:
             sparta = deepcopy(original_sparta)
-            print('Simulation: ' + str(method) + ' ' + str(constraint))
+            print('Simulation: ' + str(method) + ' ' + str(constraint) + ' ' + str(from_within))
             simp = simulate(sparta, leonidas, R, method, constraint, from_within)
             fname = '/Users/gonzalorivero/Documents/wip/promotions/dta/sim' + \
-                    str(method) + '_' + str(constraint) + '.txt' 
+                    str(method) + '_' + str(constraint) + '_' + str(from_within) + '.txt' 
             
             simulation_to_csv(leonidas, simp, method, constraint, fname)
             
