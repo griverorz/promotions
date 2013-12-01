@@ -227,9 +227,12 @@ class Army(Soldier):
             pool = list(set(pool).difference(set(unavail)))
             
             while not pool:
-                print("No one is up for promotion! Looking up in the next rank.")
-                slack += 1
-                pool = self.up_for_promotion(constraints, open_rank, None, slack)
+                if (open_rank - slack) >= 1:
+                    print("No one is up for promotion! Looking up in the next rank.")
+                    slack += 1
+                    pool = self.up_for_promotion(constraints, open_rank, None, slack)
+                else:
+                    break
 
             if method is "seniority":
                 refval = max([i.seniority for i in pool])

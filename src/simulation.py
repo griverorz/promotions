@@ -38,7 +38,7 @@ def simulate(army, ruler, R, method, constraints, from_within):
     return full_sim
 
 # write results into csv
-def simulation_to_csv(ruler, simulation, method, constraints, filename):
+def simulation_to_csv(ruler, simulation, method, constraints, from_within, filename):
     myfile = csv.writer(open(filename, 'wb'))
 
     R = len(simulation)
@@ -56,12 +56,13 @@ def simulation_to_csv(ruler, simulation, method, constraints, filename):
                            iteration['ideology'],
                            method,
                            constraints,
+                           from_within,
                            ruler.ideology]
             myfile.writerow(current_row)
 
     print 'File successfully written!'
 
-conn = psycopg2.connect("dbname=promotions")
+conn = psycopg2.connect(database="promotions")
 cur = conn.cursor()
 
 cur.execute(
@@ -78,6 +79,7 @@ QUALITY double precision,
 IDEOLOGY double precision,
 METHOD varchar,
 CONSTRAINTS varchar,
+FROM_WITHIN varchar,
 RULER_IDEOLOGY double precision);
 """
 )
@@ -86,18 +88,18 @@ conn.close()
 
 R = 200
 leonidas = Ruler(0)
-original_sparta = Army(leonidas, 30, 9, 4)
+original_sparta = Army(leonidas, 50, 9, 3)
 
 for method in ['ideology', 'random', 'quality', 'seniority']:
     for constraint in ['none', 'ordered']:
-        for from_within in [True, False]:
+        for f_within in [True, False]:
             sparta = deepcopy(original_sparta)
             print('Simulation: ' + str(method) + ' ' + str(constraint) + ' ' + str(from_within))
-            simp = simulate(sparta, leonidas, R, method, constraint, from_within)
+            simp = simulate(sparta, leonidas, R, method, constraint, f_within)
             fname = '/Users/gonzalorivero/Documents/wip/promotions/dta/sim' + \
                     str(method) + '_' + str(constraint) + '_' + str(from_within) + '.txt' 
             
-            simulation_to_csv(leonidas, simp, method, constraint, fname)
+            simulation_to_csv(leonidas, simp, method, constraint, f_within, fname)
             
             conn = psycopg2.connect("dbname=promotions")
             cur = conn.cursor()
