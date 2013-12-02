@@ -219,10 +219,12 @@ class Army(Soldier):
             open_rank = openpos[0].rank
             open_unit = None
             superior_ideology = self.get_superior(openpos[0]).ideology
+
             if open_rank is self.top_rank:
                 superior_ideology = self.ruler_ideology
             if from_within is True:
                 open_unit = openpos[0].unit
+
             pool = deepcopy(self.up_for_promotion(constraints, open_rank, open_unit, slack))
             pool = list(set(pool).difference(set(unavail)))
             
@@ -258,6 +260,9 @@ class Army(Soldier):
             self.soldiers[idx].promote(open_rank)
             self.soldiers[idx].unit = openpos[0].unit
             unavail.append(self.soldiers[idx])
+            
+            if tmp.rank is 1:
+                openpos[0].reuse(tmp.unit)
 
             openpos.pop(0)
 
