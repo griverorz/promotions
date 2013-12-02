@@ -31,16 +31,28 @@ con <- dbConnect(drv,
 
 simp <- dbSendQuery(con,
 "SELECT AVG(IDEOLOGY) AS IDEOLOGY, ITERATION, RANK,
+<<<<<<< local
+        METHOD, CONSTRAINTS, RULER_IDEOLOGY, FROM_WITHIN
+=======
         METHOD, CONSTRAINTS, RULER_IDEOLOGY
+>>>>>>> other
 FROM simp
+<<<<<<< local
+GROUP BY ITERATION, RANK, METHOD, CONSTRAINTS, RULER_IDEOLOGY, FROM_WITHIN")
+=======
 GROUP BY ITERATION, RANK, METHOD, CONSTRAINTS, RULER_IDEOLOGY")
+>>>>>>> other
 
 ideology <- fetch(simp, -1)
 dbDisconnect(con)
 
 p <- ggplot(ideology, aes(x = iteration, y = ideology, colour = factor(rank)))
 pq <- p + geom_line() +
+<<<<<<< local
+  facet_grid(method ~ constraints + from_within) +
+=======
   facet_grid(method ~ constraints) +
+>>>>>>> other
   scale_colour_discrete("Rank") +
   scale_y_continuous(limits = c(-1, 1)) +
   xlab("Iteration") +

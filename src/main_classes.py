@@ -214,6 +214,7 @@ class Army(Soldier):
 
     def promote(self, method, constraints, from_within, openpos):
         unavail = []
+
         while len(openpos) > 0:
             slack = 1
             open_rank = openpos[0].rank
@@ -227,8 +228,10 @@ class Army(Soldier):
 
             pool = deepcopy(self.up_for_promotion(constraints, open_rank, open_unit, slack))
             pool = list(set(pool).difference(set(unavail)))
-            
+
             while not pool:
+                # print openpos[0]
+                # print self.get_subordinate(openpos[0])
                 if (open_rank - slack) >= 1:
                     print("No one is up for promotion! Looking up in the next rank.")
                     slack += 1
@@ -257,13 +260,15 @@ class Army(Soldier):
                 idx = ids.index(refval)
 
             tmp = deepcopy(self.soldiers[idx])
+
+            # if tmp.rank is 1:
+            #     print tmp.unit
+            #     openpos[0].reuse(self.soldiers[idx].unit)
+
             self.soldiers[idx].promote(open_rank)
             self.soldiers[idx].unit = openpos[0].unit
             unavail.append(self.soldiers[idx])
             
-            if tmp.rank is 1:
-                openpos[0].reuse(tmp.unit)
-
             openpos.pop(0)
 
             if tmp.rank > 1:
@@ -271,6 +276,14 @@ class Army(Soldier):
                 openpos = sorted(openpos,
                                        key = lambda x: x.rank,
                                        reverse = True)
+
+    def check_units(self):
+        reference = set(generate_army_codes(self.top_rank, self.unit_size))
+        actual = set([i.unit for i in self.soldiers])
+        if reference.difference(actual):
+            return reference.difference(actual)
+        else: 
+            print "Army is complete"
 
     def reuse_officers(self):
         dead_soldiers, dead_officers = [], []
@@ -286,6 +299,7 @@ class Army(Soldier):
         for i, officer in enumerate(dead_officers):
             idx = self.soldiers.index(officer)
             self.soldiers[idx].reuse(idle_codes[i])
+        
 
     def reuse_soldiers(self):
         dead_soldiers = []
@@ -295,15 +309,20 @@ class Army(Soldier):
                     dead_soldiers.append(i)
 
         idle_codes = [i.unit for i in dead_soldiers]
+        promoted_units = self.check_units()
+        if promoted_units:
+            idle.codes.append(list(promoted_units))
 
         for i, soldier in enumerate(dead_soldiers):
             idx = self.soldiers.index(soldier)
             uu = self.soldiers[idx].unit
             self.soldiers[idx].reuse(uu)
+            print uu
 
     def recruit(self):
         self.reuse_officers()
         self.reuse_soldiers()
+        self.check_units()
 
     def network(self, distance = 1/5.):
         tr = self.unit_size

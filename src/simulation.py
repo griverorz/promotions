@@ -88,13 +88,17 @@ conn.close()
 
 R = 200
 leonidas = Ruler(0)
-original_sparta = Army(leonidas, 50, 9, 3)
+original_sparta = Army(leonidas, 35, 7, 3)
 
-for method in ['ideology', 'random', 'quality', 'seniority']:
+for method in ['ideology', 'random', 'seniority']:
     for constraint in ['none', 'ordered']:
         for f_within in [True, False]:
             sparta = deepcopy(original_sparta)
+<<<<<<< local
+            print('Method: ' + str(method) + ' Constraint: ' + str(constraint) + ' Internal: ' + str(f_within))
+=======
             print('Simulation: ' + str(method) + ' ' + str(constraint) + ' ' + str(f_within))
+>>>>>>> other
             simp = simulate(sparta, leonidas, R, method, constraint, f_within)
             fname = '/Users/gonzalorivero/Documents/wip/promotions/dta/sim' + \
                     str(method) + '_' + str(constraint) + '_' + str(f_within) + '.txt' 

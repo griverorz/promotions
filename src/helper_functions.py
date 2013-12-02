@@ -126,3 +126,10 @@ def possible_superiors(code):
         code = code/10
         out.append(code)
     return out
+
+def generate_army_codes(toprank, unitsize):
+    basic_level = reference = generate_base_codes(toprank, unitsize)
+    for rank in range(1, toprank):
+        reference = set([i/10 for i in reference])
+        basic_level.append(list(reference))
+    return flatten(basic_level)
