@@ -74,8 +74,8 @@ class Soldier(object):
                     isc = True
             return isc
         else:
-            # is_sub = unit in possible_superiors(self.unit)
-            is_sub = str(unit)[0] is str(self.unit)[0]
+            is_sub = unit in possible_superiors(self.unit)
+            # is_sub = str(unit)[0] is str(self.unit)[0]
             if ordered is False:
                 if is_sub and self.rank < rank_open and self.age < topage and self.alive:
                     isc = True
@@ -204,7 +204,6 @@ class Army(Soldier):
     def get_superior(self, soldier):
         if soldier.rank is self.top_rank:
             return soldier
-            # return("I'm the highest rank, damnit!")
         else:
             unit = str(soldier.unit)
             superior_unit = int(unit[0:(len(unit) - 1)])
@@ -225,14 +224,11 @@ class Army(Soldier):
                 superior_ideology = self.ruler_ideology
             if from_within is True:
                 open_unit = openpos[0].unit
-
+            
             pool = deepcopy(self.up_for_promotion(constraints, open_rank, open_unit, slack))
             pool = list(set(pool).difference(set(unavail)))
-
             while not pool:
-                # print openpos[0]
-                # print self.get_subordinate(openpos[0])
-                if (open_rank - slack) >= 1:
+                if (open_rank - slack) > 1:
                     print("No one is up for promotion! Looking up in the next rank.")
                     slack += 1
                     pool = self.up_for_promotion(constraints, open_rank, None, slack)
@@ -248,7 +244,6 @@ class Army(Soldier):
                 id_pool = [i.id for i in pool if i.quality is refval][0]
                 idx = self.lookupid(id_pool)
             if method is "ideology":
-                # ideologies = [(i.ideology - self.ruler_ideology) for i in pool]
                 ideologies = [(i.ideology - superior_ideology) for i in pool]
                 refval = min(ideologies)
                 idx = ideologies.index(refval)
@@ -261,14 +256,10 @@ class Army(Soldier):
 
             tmp = deepcopy(self.soldiers[idx])
 
-            # if tmp.rank is 1:
-            #     print tmp.unit
-            #     openpos[0].reuse(self.soldiers[idx].unit)
-
             self.soldiers[idx].promote(open_rank)
             self.soldiers[idx].unit = openpos[0].unit
-            unavail.append(self.soldiers[idx])
-            
+            unavail.append(deepcopy(self.soldiers[idx]))
+
             openpos.pop(0)
 
             if tmp.rank > 1:
@@ -282,8 +273,8 @@ class Army(Soldier):
         actual = set([i.unit for i in self.soldiers])
         if reference.difference(actual):
             return reference.difference(actual)
-        else: 
-            print "Army is complete"
+        else:
+            print "Army is complete!"
 
     def reuse_officers(self):
         dead_soldiers, dead_officers = [], []
@@ -302,28 +293,28 @@ class Army(Soldier):
         
 
     def reuse_soldiers(self):
+        # pdb.set_trace()
         dead_soldiers = []
         for i in self.soldiers:
-            if not i.alive:
-                if i.rank is 1:
+            if (i.alive is False) and (i.rank is 1):
                     dead_soldiers.append(i)
 
-        idle_codes = [i.unit for i in dead_soldiers]
-        promoted_units = self.check_units()
-        if promoted_units:
-            idle.codes.append(list(promoted_units))
+        idle_codes = self.check_units()
 
-        for i, soldier in enumerate(dead_soldiers):
+        if idle_codes:
+            idle_codes = list(idle_codes)
+            idle_units = [i for i in self.soldiers if i.unit in idle_codes]
+            dead_soldiers.append(idle_units)
+
+        for i, soldier in enumerate(flatten(dead_soldiers)):
             idx = self.soldiers.index(soldier)
             uu = self.soldiers[idx].unit
             self.soldiers[idx].reuse(uu)
-            print uu
 
     def recruit(self):
         self.reuse_officers()
         self.reuse_soldiers()
-        self.check_units()
-
+ 
     def network(self, distance = 1/5.):
         tr = self.unit_size
         nw = np.zeros((tr, tr), int)

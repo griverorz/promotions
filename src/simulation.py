@@ -8,6 +8,7 @@ Author: @griverorz
 Started: 21Feb2012
 '''
 
+import pdb
 import random
 import numpy as np
 import itertools
@@ -86,19 +87,18 @@ RULER_IDEOLOGY double precision);
 cur.close()
 conn.close()
 
-R = 200
+R = 300
 leonidas = Ruler(0)
-original_sparta = Army(leonidas, 35, 7, 3)
+original_sparta = Army(leonidas, 35, 3, 3)
 
-for method in ['ideology', 'random', 'seniority']:
-    for constraint in ['none', 'ordered']:
+# for method in ['ideology', 'random', 'seniority']:
+#     for constraint in ['none', 'ordered']:
+
+for method in ['seniority']:
+    for constraint in ['ordered']:
         for f_within in [True, False]:
             sparta = deepcopy(original_sparta)
-<<<<<<< local
             print('Method: ' + str(method) + ' Constraint: ' + str(constraint) + ' Internal: ' + str(f_within))
-=======
-            print('Simulation: ' + str(method) + ' ' + str(constraint) + ' ' + str(f_within))
->>>>>>> other
             simp = simulate(sparta, leonidas, R, method, constraint, f_within)
             fname = '/Users/gonzalorivero/Documents/wip/promotions/dta/sim' + \
                     str(method) + '_' + str(constraint) + '_' + str(f_within) + '.txt' 
@@ -111,7 +111,3 @@ for method in ['ideology', 'random', 'seniority']:
             conn.commit()
             cur.close()
             conn.close()
-
-
-
-

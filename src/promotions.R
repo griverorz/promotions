@@ -12,6 +12,8 @@ theme_set(theme_bw())
 wd <- "/Users/gonzalorivero/Documents/wip/promotions"
 setwd(wd)
 
+
+
 ## ITERATION INTEGER,
 ## ID INTEGER,
 ## AGE INTEGER,
@@ -91,12 +93,12 @@ con <- dbConnect(drv,
 
 simp <- dbSendQuery(con,
         "select id, method, constraints
-         from 
-             (select *, rank() over (partition by method, constraints order by random()) as rrank 
-              from simp 
-              where rank = 4 and iteration > 20) 
-         subquery 
-         where rrank = 1;") 
+         from
+             (select *, rank() over (partition by method, constraints order by random()) as rrank
+              from simp
+              where rank = 4 and iteration > 20)
+         subquery
+         where rrank = 1;")
 simp <- fetch(simp, -1)
 
 
@@ -107,9 +109,9 @@ dbDisconnect(con)
 
 generals <- vector("list", nrow(simp))
 for (i in 1:nrow(simp)) {
-    generals[[i]] <- 
-    full[full$id == simp$id[i] & 
-         full$method == simp$method[i] & 
+    generals[[i]] <-
+    full[full$id == simp$id[i] &
+         full$method == simp$method[i] &
          full$constraints == simp$constraints[i], ]
 }
 
