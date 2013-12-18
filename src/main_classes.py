@@ -34,7 +34,8 @@ class Soldier(object):
                 '\nAge: ' + str(self.age) +               \
                 '\nQuality: ' + str(self.quality) +       \
                 '\nIdeology: ' + str(self.ideology) +     \
-                '\nUnit: ' + str(self.unit)
+                '\nUnit: ' + str(self.unit) +             \
+                '\nAlive: ' + str(self.alive)
         return chars
 
     def report(self):
@@ -170,7 +171,8 @@ class Army(Soldier):
         pool_list = []
         topage = self.top_age
         for i in self.soldiers:
-            pool_list.append(i.is_candidate(ordered, open_rank, topage, open_unit, slack))
+            pool_list.append(i.is_candidate(ordered, open_rank, 
+                                            topage, open_unit, slack))
         candidates = [val for pos, val in enumerate(self.soldiers)
                       if pool_list[pos] is True]
         return(candidates)
@@ -224,8 +226,9 @@ class Army(Soldier):
                 superior_ideology = self.ruler_ideology
             if from_within is True:
                 open_unit = openpos[0].unit
-            
-            pool = deepcopy(self.up_for_promotion(constraints, open_rank, open_unit, slack))
+
+            pool = deepcopy(self.up_for_promotion(constraints, open_rank,
+                                                  open_unit, slack))
             pool = list(set(pool).difference(set(unavail)))
             while not pool:
                 if (open_rank - slack) > 1:
@@ -264,9 +267,8 @@ class Army(Soldier):
 
             if tmp.rank > 1:
                 openpos.append(tmp)
-                openpos = sorted(openpos,
-                                       key = lambda x: x.rank,
-                                       reverse = True)
+                openpos = sorted(openpos, key = lambda x: x.rank,
+                                 reverse = True)
 
     def check_units(self):
         reference = set(generate_army_codes(self.top_rank, self.unit_size))
@@ -274,47 +276,41 @@ class Army(Soldier):
         if reference.difference(actual):
             return reference.difference(actual)
         else:
-            print "Army is complete!"
+            # print "Army is complete!"
+            return []
 
     def reuse_officers(self):
         dead_soldiers, dead_officers = [], []
+        open_units = list(self.check_units())
         for i in self.soldiers:
-            if not i.alive:
-                if i.rank is 1:
-                    dead_soldiers.append(i)
-                else:
-                    dead_officers.append(i)
+            if i.alive and (i.unit in open_units):
+                dead_soldiers.append(i)
+            if not i.alive and i.rank is not 1:
+                dead_officers.append(i)
 
+        if not len(dead_soldiers) == len(dead_officers):
+            pdb.set_trace()
         idle_codes = [i.unit for i in dead_soldiers]
 
         for i, officer in enumerate(dead_officers):
             idx = self.soldiers.index(officer)
             self.soldiers[idx].reuse(idle_codes[i])
         
-
     def reuse_soldiers(self):
-        # pdb.set_trace()
         dead_soldiers = []
-        for i in self.soldiers:
-            if (i.alive is False) and (i.rank is 1):
-                    dead_soldiers.append(i)
-
-        idle_codes = self.check_units()
-
-        if idle_codes:
-            idle_codes = list(idle_codes)
-            idle_units = [i for i in self.soldiers if i.unit in idle_codes]
-            dead_soldiers.append(idle_units)
+        for i in self.get_rank(1):
+            if (i.alive is False):
+                dead_soldiers.append(i)
 
         for i, soldier in enumerate(flatten(dead_soldiers)):
             idx = self.soldiers.index(soldier)
             uu = self.soldiers[idx].unit
-            self.soldiers[idx].reuse(uu)
+            self.soldiers[idx].reuse(uu)    
 
     def recruit(self):
         self.reuse_officers()
         self.reuse_soldiers()
- 
+
     def network(self, distance = 1/5.):
         tr = self.unit_size
         nw = np.zeros((tr, tr), int)

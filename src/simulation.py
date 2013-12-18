@@ -34,6 +34,7 @@ def simulate(army, ruler, R, method, constraints, from_within):
         army.promote(method, constraints, from_within, openpos)
         army.pass_time()
         army.recruit()
+        # pdb.set_trace()                
         full_sim[it] = deepcopy(army)
         it += 1
     return full_sim
