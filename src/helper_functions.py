@@ -127,6 +127,28 @@ def possible_superiors(code):
         out.append(code)
     return out
 
+
+def find_subordinates(self, soldier):
+    subs_list = [soldier]
+    if soldier.rank is 1:
+        return subs_list
+    else:
+        unit = str(soldier.unit)
+        children = [str(unit) + str((i % self.unit_size) + 1) \
+                    for i in range(self.unit_size)]
+        ids = [i.unit for i in self.soldiers]
+        for i in children:
+            idx = ids.index(int(i))
+            subs = self.find_subordinates(self.soldiers[idx])
+            subs_list.append(subs)
+            return subs_list
+            
+def get_subordinate(self, soldier):
+    subs = self.find_subordinates(soldier)
+    fsubs = flatten(subs)
+    fsubs.pop(0)
+    return fsubs
+
 def generate_army_codes(toprank, unitsize):
     basic_level = reference = generate_base_codes(toprank, unitsize)
     for rank in range(1, toprank):

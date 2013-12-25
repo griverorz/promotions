@@ -118,6 +118,64 @@ class Ruler(object):
 
 
 class Army(Soldier):
+    """ An ordered collection of soldiers """
+    def __init__(self, unit_size, top_rank, top_age):
+        self.unit_size = unit_size
+        self.top_rank = top_rank
+        self.top_age = top_age
+        self.units = generate_army_codes(self.top_rank, self.unit_size)
+        self.data = dict.fromkeys(self.units)
+        self.data["Ruler"] = None
+
+    def __str__(self):
+        chars = "Soldiers: " + str(len(self.data)) + \
+                "\nUnit size: " + str(self.unit_size) + \
+                "\nTop rank: " + str(self.top_rank)
+        return chars
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+    def get_rank(self, rank):
+        rank = filter(lambda x: len(str(x)) == rank, self.units)
+        return [self.data[x] for x in rank]
+        
+    def up_for_retirement(self):
+        retirees = dict.fromkeys(range(1, self.top_rank + 1))
+        for rank in range(1, self.top_rank + 1):
+            in_rank = get_rank(self, rank)
+            avail_list = []
+            for soldier in in_rank:
+                avail_list.append(soldier.will_retire(self.top_age))
+            retirees[rank] = avail_list
+        return(retirees)
+
+    def up_for_promotion(self, constraints, open_position, slack = 1):
+        pool_list = []
+        if 'ordered' in constraints:
+            for soldier in self.data.values():
+                pool_list.append(i.is_candidate(True, open_position, self.top_age, slack))
+        if 'internal' in constraints:
+            for soldier in self.data.values():
+            contraint over something
+
+        for i in self.soldiers:
+            pool_list.append(i.is_candidate(ordered, open_rank, 
+                                            topage, open_unit, slack))
+        candidates = [val for pos, val in enumerate(self.soldiers)
+                      if pool_list[pos] is True]
+        return(candidates)
+
+        known_constraints = {
+            ## ordered, seniority
+            'ordered': True,
+            'none': False
+        }
+
+
+
+
+class Army(Soldier):
     """ A collection of soldiers """
 
     def __init__(self, ruler, top_age, unit_size, top_rank):
@@ -142,6 +200,20 @@ class Army(Soldier):
     def get_rank(self, rank):
         rank_list = [i for i in self.soldiers if i.rank == rank]
         return(rank_list)
+
+    def get_unit(self, soldier):
+        for unit, who in self.data.iteritems():
+            if  who == soldier:
+                print unit
+
+    def get_superior(self, unit):
+        if len(str(unit)) is self.top_rank:
+            return self["Ruler"]
+        else:
+            return self.data[unit/10]
+
+    def get_subordinates(self):
+        
 
     def rank_dist(self):
         ranks = [i.rank for i in self.soldiers if i.alive]
