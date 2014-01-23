@@ -37,7 +37,7 @@ class Soldier(object):
                 '\nUnit: ' + str(self.unit) +             \
                 '\nAlive: ' + str(self.alive)
         return chars
-
+        
     def report(self):
         return({'id': self.id,
                 'rank': self.rank,
@@ -64,45 +64,40 @@ class Soldier(object):
         else:
             return(False)
 
-    def is_candidate(self, ordered, rank_open, topage, unit = None, slack = 1):
-        isc = False
-        if unit is None:
+    def is_candidate(self, openrank, topage, ordered, byunit = None, slack = 1):
+
+        def _possible_superiors(code):
+            out = []
+            while len(str(code)) > 1:
+                code = code/10
+                out.append(code)
+            return out
+
+        is_sub = unit in _possible_superiors(self.unit)
+
+        def _candidate(openrank, topage, ordered, slack):
+            isc = False
+            condalive = self.age < topage and self.alive
             if ordered is False:
-                if self.rank < rank_open and self.age < topage and self.alive:
+                if self.rank < openrank and condalive:
                     isc = True
             elif ordered is True:
-                if self.rank == (rank_open - slack) and self.age < topage and self.alive:
-                    isc = True
-            return isc
-        else:
-            is_sub = unit in possible_superiors(self.unit)
-            # is_sub = str(unit)[0] is str(self.unit)[0]
-            if ordered is False:
-                if is_sub and self.rank < rank_open and self.age < topage and self.alive:
-                    isc = True
-            elif ordered is True:
-                if is_sub and self.rank == (rank_open - slack) and self.age < topage and self.alive:
+                if self.rank == (openrank - slack) and condalive: 
                     isc = True
             return isc
 
-
-    def promote(self, rank_open = None):
-        if rank_open is None:
-            self.rank += 1
-        else:
-            self.rank = rank_open
-        self.seniority = 0
+        isc = _candidate(openrank, topage, ordered, slack) and is_sub
+        return isc
 
     def kill(self):
         self.alive = False
 
-    def reuse(self, unit):
+    def reuse(self):
         self.age = 1 + int(round(np.random.gamma(1, 2, 1)))
         self.rank = 1
         self.quality = random.uniform(0, 1)
         self.ideology = random.uniform(-1, 1)
         self.seniority = 1
-        self.unit = unit
         self.id = next(self.id_generator)
         self.alive = True
 
@@ -127,6 +122,18 @@ class Army(Soldier):
         self.data = dict.fromkeys(self.units)
         self.data["Ruler"] = None
 
+    def fill(self):
+
+        for unit in self.data.keys():
+            rr = self.unit_to_rank
+            refbase = (self.top_rank + 1) - rr
+            refscale = self.topage - 1
+            aa = int(round(np.random.beta(rr, refbase, 1) * refscale + 1))
+            ss = random.choice(range(min(aa, rr), max(aa, rr) + 1))
+            qq = random.uniform(0, 1)
+            ii = random.uniform(-1, 1)
+            self.data[i] = Soldier(rr, ss, aa, qq, ii, unit)
+
     def __str__(self):
         chars = "Soldiers: " + str(len(self.data)) + \
                 "\nUnit size: " + str(self.unit_size) + \
@@ -136,269 +143,133 @@ class Army(Soldier):
     def __getitem__(self, key):
         return self.data[key]
 
+    def unit_to_rank(self, unit):
+        return self.top_rank - len(str(unit)) + 1
+
     def get_rank(self, rank):
         rank = filter(lambda x: len(str(x)) == rank, self.units)
-        return [self.data[x] for x in rank]
-        
-    def up_for_retirement(self):
-        retirees = dict.fromkeys(range(1, self.top_rank + 1))
-        for rank in range(1, self.top_rank + 1):
-            in_rank = get_rank(self, rank)
-            avail_list = []
-            for soldier in in_rank:
-                avail_list.append(soldier.will_retire(self.top_age))
-            retirees[rank] = avail_list
-        return(retirees)
-
-    def up_for_promotion(self, constraints, open_position, slack = 1):
-        pool_list = []
-        if 'ordered' in constraints:
-            for soldier in self.data.values():
-                pool_list.append(i.is_candidate(True, open_position, self.top_age, slack))
-        if 'internal' in constraints:
-            for soldier in self.data.values():
-            contraint over something
-
-        for i in self.soldiers:
-            pool_list.append(i.is_candidate(ordered, open_rank, 
-                                            topage, open_unit, slack))
-        candidates = [val for pos, val in enumerate(self.soldiers)
-                      if pool_list[pos] is True]
-        return(candidates)
-
-        known_constraints = {
-            ## ordered, seniority
-            'ordered': True,
-            'none': False
-        }
-
-
-
-
-class Army(Soldier):
-    """ A collection of soldiers """
-
-    def __init__(self, ruler, top_age, unit_size, top_rank):
-        """ Generates army of size N (at the base level) with K levels.
-        Each unit being of size U """
-        self.N = unit_size**top_rank
-        self.top_age = top_age
-        self.unit_size = unit_size
-        self.top_rank = top_rank
-        self.ruler_ideology = ruler.ideology
-        if self.N % self.unit_size is not 0:
-            print('Wrong dimensions')
-        self.soldiers = populate_army(self.top_age, self.top_rank, self.unit_size)
-
-    def __str__(self):
-        chars = "Soldiers: " + str(self.N) + \
-                "\nTop age: " + str(self.top_age) + \
-                "\nUnit size: " + str(self.unit_size) + \
-                "\nTop rank: " + str(self.top_rank)
-        return chars
-
-    def get_rank(self, rank):
-        rank_list = [i for i in self.soldiers if i.rank == rank]
-        return(rank_list)
+        # return [self.data[x] for x in rank]
+        return rank
 
     def get_unit(self, soldier):
         for unit, who in self.data.iteritems():
-            if  who == soldier:
-                print unit
+            if who == soldier:
+               return(unit)
 
-    def get_superior(self, unit):
-        if len(str(unit)) is self.top_rank:
-            return self["Ruler"]
-        else:
-            return self.data[unit/10]
-
-    def get_subordinates(self):
-        
-
-    def rank_dist(self):
-        ranks = [i.rank for i in self.soldiers if i.alive]
-        rankd = defaultdict(int)
-        for ind in ranks:
-            rankd[ind] += 1
-        return(rankd)
-
-    def up_for_retirement(self):
-        avail_list = []
-        topage = self.top_age
-        for i in self.soldiers:
-            avail_list.append(i.will_retire(topage))
-        retirees = [val for pos, val in enumerate(self.soldiers) 
-                    if avail_list[pos] and val.rank > 1]
-        ## sort them by rank
-        retirees = sorted(retirees, key = lambda x: x.rank, reverse = True)
-        return(retirees)
-
-    def up_for_promotion(self, constraints, open_rank, open_unit = None, slack = 1):
-        known_constraints = {
-            ## ordered, seniority
-            'ordered': True,
-            'none': False
-        }
-        ordered = known_constraints[constraints]
-        pool_list = []
-        topage = self.top_age
-        for i in self.soldiers:
-            pool_list.append(i.is_candidate(ordered, open_rank, 
-                                            topage, open_unit, slack))
-        candidates = [val for pos, val in enumerate(self.soldiers)
-                      if pool_list[pos] is True]
-        return(candidates)
-
-    def lookupid(self, value):
-        id_army = [i.id for i in self.soldiers]
-        idx = id_army.index(value)
-        return idx
-
-    def find_subordinates(self, soldier):
-        subs_list = [soldier]
-        if soldier.rank is 1:
+    def find_subordinates(self, unit):
+        subs_list = [unit]
+        if len(str(unit)) >= self.top_rank:
             return subs_list
         else:
-            unit = str(soldier.unit)
-            children = [str(unit) + str((i % self.unit_size) + 1) \
-                       for i in range(self.unit_size)]
-            ids = [i.unit for i in self.soldiers]
+            children = [int(str(unit) + str((i % self.unit_size) + 1)) 
+                        for i in range(self.unit_size)]
             for i in children:
-                idx = ids.index(int(i))
-                subs = self.find_subordinates(self.soldiers[idx])
+                subs = self.find_subordinates(i)
                 subs_list.append(subs)
-            return subs_list
+        return subs_list
 
-    def get_subordinate(self, soldier):
-        subs = self.find_subordinates(soldier)
+    def get_subordinates(self, unit):
+        subs = self.find_subordinates(unit)
         fsubs = flatten(subs)
         fsubs.pop(0)
         return fsubs
 
-    def get_superior(self, soldier):
-        if soldier.rank is self.top_rank:
-            return soldier
+    def get_superior(self, unit):
+        if len(str(unit)) is 1:
+            return unit
         else:
-            unit = str(soldier.unit)
-            superior_unit = int(unit[0:(len(unit) - 1)])
-            ids = [i.unit for i in self.soldiers]
-            idx = ids.index(superior_unit)
-            return self.soldiers[idx]
+            return unit/10
+    
+    def up_for_retirement(self):
+        retirees = []
+        for i in self.units:
+            if self.data[i].will_retire(self.top_age):
+                retirees.append(i)
+        return retirees
+    
+    def up_for_promotion(self, openpos, topage, ordered, byunit, slack):
+        pool =[]
+        openrank = self.data[i].rank
+        for i in self.units:
+            if self.data[i].is_candidate(openrank, topage, ordered, byunit, slack):
+                pool.append(i)
+        return pool
 
-    def promote(self, method, constraints, from_within, openpos):
+    def promote(self, method, constraints, byunit, openpos):
+
         unavail = []
+        open_rank = self.data[openpos].rank
 
-        while len(openpos) > 0:
-            slack = 1
-            open_rank = openpos[0].rank
-            open_unit = None
-            superior_ideology = self.get_superior(openpos[0]).ideology
+        pool = deepcopy(self.up_for_promotion(openpos, topage, ordered, byunit, slack))
+        pool = list(set(pool).difference(set(unavail)))
 
-            if open_rank is self.top_rank:
-                superior_ideology = self.ruler_ideology
-            if from_within is True:
-                open_unit = openpos[0].unit
+        if method is 'seniority':
+            refval = max([self.data[i].seniority for i in pool])
+            idx = [i for i in pool if self.data[i].seniority is refval]
+        if method is 'quality':
+            refval = max([self.data[i].quality for i in pool])
+            idx = [i for i in pool if self.data[i].quality is refval]
+        if method is 'ideology':
+            refval = min([(self.data[i].seniority - s_ideology) for i in pool])
+            idx = [i for i in pool if (self.data[i].ideology - s_ideology) is refval]
+        if method is 'random':
+            idx = random.choice(pool)
 
-            pool = deepcopy(self.up_for_promotion(constraints, open_rank,
-                                                  open_unit, slack))
-            pool = list(set(pool).difference(set(unavail)))
-            while not pool:
-                if (open_rank - slack) > 1:
-                    print("No one is up for promotion! Looking up in the next rank.")
-                    slack += 1
-                    pool = self.up_for_promotion(constraints, open_rank, None, slack)
-                else:
-                    break
+        unavail.append(copyself.data[openpos])
+        self.data[openpos] = self.data[idx]
+        self.data[openpos].seniority = 0
+        self.data[openpos].rank = self.unit_to_rank(openpos)
+        self.data[openpos].unit = openpos
 
-            if method is "seniority":
-                refval = max([i.seniority for i in pool])
-                id_pool = [i.id for i in pool if i.seniority is refval][0]
-                idx = self.lookupid(id_pool)
-            if method is "quality":
-                refval = max([i.quality for i in pool])
-                id_pool = [i.id for i in pool if i.quality is refval][0]
-                idx = self.lookupid(id_pool)
-            if method is "ideology":
-                ideologies = [(i.ideology - superior_ideology) for i in pool]
-                refval = min(ideologies)
-                idx = ideologies.index(refval)
-                id_pool = pool[idx].id
-                idx = self.lookupid(id_pool)
-            if method is "random":
-                refval = random.choice([i.id for i in pool])
-                ids = [i.id for i in self.soldiers]
-                idx = ids.index(refval)
-
-            tmp = deepcopy(self.soldiers[idx])
-
-            self.soldiers[idx].promote(open_rank)
-            self.soldiers[idx].unit = openpos[0].unit
-            unavail.append(deepcopy(self.soldiers[idx]))
-
-            openpos.pop(0)
-
-            if tmp.rank > 1:
-                openpos.append(tmp)
-                openpos = sorted(openpos, key = lambda x: x.rank,
-                                 reverse = True)
-
-    def check_units(self):
-        reference = set(generate_army_codes(self.top_rank, self.unit_size))
-        actual = set([i.unit for i in self.soldiers])
-        if reference.difference(actual):
-            return reference.difference(actual)
-        else:
-            # print "Army is complete!"
-            return []
-
-    def reuse_officers(self):
-        dead_soldiers, dead_officers = [], []
-        open_units = list(self.check_units())
-        for i in self.soldiers:
-            if i.alive and (i.unit in open_units):
-                dead_soldiers.append(i)
-            if not i.alive and i.rank is not 1:
-                dead_officers.append(i)
-
-        if not len(dead_soldiers) == len(dead_officers):
-            pdb.set_trace()
-        idle_codes = [i.unit for i in dead_soldiers]
-
-        for i, officer in enumerate(dead_officers):
-            idx = self.soldiers.index(officer)
-            self.soldiers[idx].reuse(idle_codes[i])
+        tmp = self.data[idx].rank
+        self.data[idx] = None
+        openpos.pop(0)
         
-    def reuse_soldiers(self):
-        dead_soldiers = []
-        for i in self.get_rank(1):
-            if (i.alive is False):
-                dead_soldiers.append(i)
-
-        for i, soldier in enumerate(flatten(dead_soldiers)):
-            idx = self.soldiers.index(soldier)
-            uu = self.soldiers[idx].unit
-            self.soldiers[idx].reuse(uu)    
-
-    def recruit(self):
-        self.reuse_officers()
-        self.reuse_soldiers()
+        if tmp > 1:
+            openpos.append(idx)
+            openpos = sorted(openpos, key = lambda x: self.unit_to_rank(idx),
+                             reverse = True)                
+        else:
+            self.data[idx].reuse()
 
     def network(self, distance = 1/5.):
         tr = self.unit_size
         nw = np.zeros((tr, tr), int)
-        generals = self.get_rank(self.top_rank)
-        for i in range(len(generals)):
+        gg = self.get_rank(self.top_rank)
+        for i in range(len(gg)):
             for j in range(i):
                 if i is j:
                     nw[i, j] = 0
                 else:
-                    if generals[i].ideology - generals[j].ideology < distance:
+                    if self.data[gg[i]].ideology - self.data[gg[j]].ideology < distance:
                         nw[i, j], nw[j, i] = 1, 1
                     else:
                         nw[i, j], nw[j, i] = 0, 0
         return Graph.Adjacency(nw.tolist()).as_undirected()
 
     def pass_time(self):
-        for i in self.soldiers:
+        for i in self.data.values():
             Soldier.pass_time(i, self.top_age)
 
+    def recruit_soldiers(self):
+        dead_soldiers = []
+        for i in self.get_rank(1):
+            if (self.data[i].alive is False):
+                dead_soldiers.append(i)
+
+        for i, soldier in enumerate(flatten(dead_soldiers)):
+            self.data[i].reuse()
+
+    def test(self):
+        ftest = True
+        # No empy position
+        novacancies = any(i is not None for i in self.data.values())
+        # Position in agreement with rank
+        consistent = [self.data[i].rank is self.unit_to_rank(i) for i in self.units]
+        # Units in agreement
+        consistent = [self.data[i].unit is i for i in self.units]
+        # No duplicates
+        nodupes = len(set(self.data.values())) is len(self.data.keys())
+        if not novacancies or not consistent or not nodupes:
+            ftest = False
+        return ftest

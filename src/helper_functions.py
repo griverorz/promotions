@@ -120,17 +120,13 @@ def flatten(x):
     else:
         return [x]
 
-def possible_superiors(code):
-    out = []
-    while len(str(code)) > 1:
-        code = code/10
-        out.append(code)
-    return out
+def reverse_lookup(mydict, value):
+    tmp = dict((v,k) for k, v in mydict.iteritems())
+    return tmp[value]
 
-
-def find_subordinates(self, soldier):
-    subs_list = [soldier]
-    if soldier.rank is 1:
+def find_subordinates(rank):
+    subs_list = [rank]
+    if rank is 1:
         return subs_list
     else:
         unit = str(soldier.unit)
