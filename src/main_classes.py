@@ -2,7 +2,7 @@
 
 """ MAIN CLASSES """
 
-import helper_functions
+from helper_functions import *
 import math
 import sys
 import random
