@@ -23,31 +23,27 @@ import igraph
 import helper_functions
 import main_classes
 
-def simulate(army, ruler, R, method, constraints, from_within):
+def simulate(army, ruler, R, method, ordered, byunit):
     full_sim = dict.fromkeys(range(R))
     full_sim[0] = deepcopy(army)
 
     it = 1    
     while it < R:
         print("Iteration " + str(it))
-        openpos = army.up_for_retirement()
-        army.promote(method, constraints, from_within, openpos)
-        army.pass_time()
-        army.recruit()
-        # pdb.set_trace()                
+        army.run_promotion(method, ordered, byunit)
         full_sim[it] = deepcopy(army)
         it += 1
     return full_sim
 
 # write results into csv
-def simulation_to_csv(ruler, simulation, method, constraints, from_within, filename):
+def simulation_to_csv(ruler, simulation, method, ordered, byunit, filename):
     myfile = csv.writer(open(filename, 'wb'))
 
     R = len(simulation)
 
     for i in range(1, R):
-        for j in simulation[i].soldiers:
-            iteration = j.report()
+        for j in simulation[i].units:
+            iteration = simulation[i].data[j].report()
             current_row = [i,
                            iteration['id'],
                            iteration['age'],
@@ -57,8 +53,8 @@ def simulation_to_csv(ruler, simulation, method, constraints, from_within, filen
                            iteration['quality'],
                            iteration['ideology'],
                            method,
-                           constraints,
-                           from_within,
+                           ordered,
+                           byunit,
                            ruler.ideology]
             myfile.writerow(current_row)
 
@@ -88,23 +84,21 @@ RULER_IDEOLOGY double precision);
 cur.close()
 conn.close()
 
+
+baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
 R = 300
 leonidas = Ruler(0)
-original_sparta = Army(leonidas, 35, 3, 3)
+original_sparta = Army(3, 3, 20, 0)
+original_sparta.fill()
 
-# for method in ['ideology', 'random', 'seniority']:
-#     for constraint in ['none', 'ordered']:
-
-for method in ['seniority']:
-    for constraint in ['ordered']:
-        for f_within in [True, False]:
+for method in ['seniority', 'ideology', 'random', 'quality']:
+    for ordered in [True, False]:
+        for byunit in [True, False]:
             sparta = deepcopy(original_sparta)
-            print('Method: ' + str(method) + ' Constraint: ' + str(constraint) + ' Internal: ' + str(f_within))
-            simp = simulate(sparta, leonidas, R, method, constraint, f_within)
-            fname = '/Users/gonzalorivero/Documents/wip/promotions/dta/sim' + \
-                    str(method) + '_' + str(constraint) + '_' + str(f_within) + '.txt' 
-            
-            simulation_to_csv(leonidas, simp, method, constraint, f_within, fname)
+            print "Method {}, Constraint {}, Internal {}".format(method, ordered, byunit)
+            simp = simulate(sparta, leonidas, R, method, ordered, byunit)
+            fname = baseloc+str(method)+'_'+str(ordered)+'_'+str(byunit)+'.txt' 
+            simulation_to_csv(leonidas, simp, method, ordered, byunit, fname)
             
             conn = psycopg2.connect("dbname=promotions")
             cur = conn.cursor()

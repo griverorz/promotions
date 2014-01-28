@@ -3,6 +3,7 @@
 """ MAIN CLASSES """
 
 import helper_functions
+import math
 import sys
 import random
 import itertools
@@ -64,7 +65,8 @@ class Soldier(object):
         else:
             return(False)
 
-    def is_candidate(self, openrank, topage, ordered, byunit = False, slack = 1):
+    def is_candidate(self, openrank, openunit, topage, ordered, 
+                     byunit = False, slack = 1):
 
         def _possible_superiors(code):
             out = []
@@ -75,7 +77,7 @@ class Soldier(object):
 
         is_sub = True
         if byunit:
-            is_sub = openrank in _possible_superiors(self.unit)
+            is_sub = openunit in _possible_superiors(self.unit)
 
         def _candidate(openrank, topage, ordered, slack):
             isc = False
@@ -193,8 +195,8 @@ class Army(Soldier):
         pool =[]
         openrank = self.unit_to_rank(openpos)
         for i in self.units:
-            if self[i] and self[i].is_candidate(openrank, self.top_age, 
-                                    ordered, byunit, slack):
+            if self[i] and self[i].is_candidate(openrank, openpos, self.top_age, 
+                                                ordered, byunit, slack):
                 pool.append(i)
         return pool
 
@@ -211,13 +213,13 @@ class Army(Soldier):
         if method is 'ideology':
             superior = self.get_superior(openpos)
             if superior is 'Ruler':
-                s_ideology = self.data['Ruler']
+                s_ideology = self.data['Ruler'].ideology
             else:
                 s_ideology = self.data[superior].ideology
-            diff_ideo = [(self.data[i].seniority - s_ideology) for i in listpool]
-            refval = min(diff_ideo)
-            idx = [i for i in listpool if diff_ideo is refval][0]
-
+            diff_ideo = [(self.data[i].ideology - s_ideology) for i in listpool]
+            mindiff = min(diff_ideo)
+            idx = listpool[diff_ideo.index(mindiff)]
+            
         if method is 'random':
             idx = random.choice(listpool)
 
@@ -230,25 +232,46 @@ class Army(Soldier):
 
         while openpos:
             toreplace = openpos[0]
-            
+            print "Replacing {}...".format(toreplace)
+            slack = 1            
             pool = self.up_for_promotion(toreplace, ordered, byunit, 1)
+
+            while not pool and (self.unit_to_rank(toreplace) - slack) > 1:
+                slack += 1
+                pool = self.up_for_promotion(toreplace, ordered, byunit, slack)
+                print "Looking one level deeper"
+
             pool = list(set(pool).difference(set(unavail)))
-            idx = self.picker(toreplace, pool, method)
 
-            unavail.append(self.data[idx])
+            if not pool:
+                print "\tCreating {}'s holder".format(toreplace)
+                rr = self.unit_to_rank(toreplace)
+                aa = self.top_age - 1
+                ss = 0
+                qq = random.uniform(0, 0.25)
+                ii = random.uniform(-1, 1)
+                self.data[toreplace] = Soldier(rr, ss, aa, qq, ii, toreplace)        
 
-            self.data[toreplace] = deepcopy(self.data[idx])
-            self.data[toreplace].seniority = 0
-            self.data[toreplace].rank = self.unit_to_rank(toreplace)
-            self.data[toreplace].unit = toreplace
+                openpos.pop(0)
+                unavail.append(toreplace)
 
-            self.data[idx] = None
-            openpos.pop(0)
+            else:
+                idx = self.picker(toreplace, pool, method)
+                print "\tPromoting {}...".format(idx)
+                self.data[toreplace] = deepcopy(self.data[idx])
+                self.data[toreplace].seniority = 0
+                self.data[toreplace].rank = self.unit_to_rank(toreplace)
+                self.data[toreplace].unit = toreplace
+
+                self.data[idx] = None
+                unavail.append(self.data[idx])
+                openpos.pop(0)
         
-            if self.unit_to_rank(idx) > 1:
-                openpos.append(idx)
-                openpos = sorted(openpos, key = lambda x: self.unit_to_rank(idx),
-                                 reverse = True)                
+                if self.unit_to_rank(idx) > 1:
+                    openpos.append(idx)
+                    openpos = sorted(openpos, key = lambda x: self.unit_to_rank(idx),
+                                     reverse = True)                
+
 
     def network(self, distance = 1/5.):
         tr = self.unit_size
@@ -272,27 +295,31 @@ class Army(Soldier):
 
     def recruit_soldiers(self):
         dead_soldiers = []
-        dead_soldiers = filter(lambda x: self.data[x] is None, self.get_rank(1))
+        dead_soldiers = filter(lambda x: 
+                               (self.data[x] is None) or (self.data[x].alive is False), 
+                               self.get_rank(1))
 
         for mia in dead_soldiers:
             rr = 1
             refbase = (self.top_rank + 1) - rr
             refscale = self.top_age - 1
             aa = int(round(np.random.beta(rr, refbase, 1) * refscale + 1))
-            ss = 0
+            ss = random.choice(range(min(aa, rr), max(aa, rr) + 1))             
             qq = random.uniform(0, 1)
             ii = random.uniform(-1, 1)
             self.data[mia] = Soldier(rr, ss, aa, qq, ii, mia)        
-            
+        return self
+
     def run_promotion(self, method, ordered, byunit):
         openpos = self.up_for_retirement()
         self.promote(openpos, method, ordered, byunit)
         self.pass_time()
         self.recruit_soldiers()
+        self.test()
 
     def test(self):
         ftest = True
-        # No empy position
+        # No empty position
         novacancies = any(i is not None for i in self.data.values())
         # Position in agreement with rank
         consistent = [self.data[i].rank is self.unit_to_rank(i) for i in self.units]
@@ -302,4 +329,4 @@ class Army(Soldier):
         nodupes = len(set(self.data.values())) is len(self.data.keys())
         if not novacancies or not consistent or not check_units or not nodupes:
             ftest = False
-        return ftest
+        print "Army passes all tests: {}".format(ftest)

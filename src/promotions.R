@@ -12,8 +12,6 @@ theme_set(theme_bw())
 wd <- "/Users/gonzalorivero/Documents/wip/promotions"
 setwd(wd)
 
-
-
 ## ITERATION INTEGER,
 ## ID INTEGER,
 ## AGE INTEGER,
@@ -31,30 +29,16 @@ drv <- dbDriver("PostgreSQL")
 con <- dbConnect(drv,
                  dbname = 'promotions')
 
-simp <- dbSendQuery(con,
-"SELECT AVG(IDEOLOGY) AS IDEOLOGY, ITERATION, RANK,
-<<<<<<< local
+ideology <- dbGetQuery(con,
+"select AVG(IDEOLOGY) AS IDEOLOGY, ITERATION, RANK,
         METHOD, CONSTRAINTS, RULER_IDEOLOGY, FROM_WITHIN
-=======
-        METHOD, CONSTRAINTS, RULER_IDEOLOGY
->>>>>>> other
-FROM simp
-<<<<<<< local
-GROUP BY ITERATION, RANK, METHOD, CONSTRAINTS, RULER_IDEOLOGY, FROM_WITHIN")
-=======
-GROUP BY ITERATION, RANK, METHOD, CONSTRAINTS, RULER_IDEOLOGY")
->>>>>>> other
-
-ideology <- fetch(simp, -1)
+from simp
+group by ITERATION, RANK, METHOD, CONSTRAINTS, RULER_IDEOLOGY, FROM_WITHIN")
 dbDisconnect(con)
 
 p <- ggplot(ideology, aes(x = iteration, y = ideology, colour = factor(rank)))
 pq <- p + geom_line() +
-<<<<<<< local
   facet_grid(method ~ constraints + from_within) +
-=======
-  facet_grid(method ~ constraints) +
->>>>>>> other
   scale_colour_discrete("Rank") +
   scale_y_continuous(limits = c(-1, 1)) +
   xlab("Iteration") +
@@ -68,10 +52,10 @@ con <- dbConnect(drv,
                  dbname = 'promotions')
 
 simp <- dbSendQuery(con,
-"SELECT AVG(QUALITY) AS QUALITY, ITERATION, RANK,
+"select avg(QUALITY) AS QUALITY, ITERATION, RANK,
         METHOD, CONSTRAINTS, RULER_IDEOLOGY
-FROM simp
-GROUP BY ITERATION, RANK, METHOD, CONSTRAINTS, RULER_IDEOLOGY")
+from simp
+group by ITERATION, RANK, METHOD, CONSTRAINTS, RULER_IDEOLOGY")
 
 quality <- fetch(simp, -1)
 dbDisconnect(con)
@@ -94,7 +78,8 @@ con <- dbConnect(drv,
 simp <- dbSendQuery(con,
         "select id, method, constraints
          from
-             (select *, rank() over (partition by method, constraints order by random()) as rrank
+             (select *, rank() over (partition by method, constraints 
+                                     order by random()) as rrank
               from simp
               where rank = 4 and iteration > 20)
          subquery
