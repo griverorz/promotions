@@ -28,7 +28,8 @@ def simulate(army, ruler, R, method, ordered, byunit):
 
     it = 1    
     while it < R:
-        print("Iteration " + str(it))
+        if it % 10 is 0:
+            print "Iteration {}".format(it)
         army.run_promotion(method, ordered, byunit)
         full_sim[it] = deepcopy(army)
         it += 1
@@ -54,7 +55,7 @@ def simulation_to_csv(ruler, simulation, method, ordered, byunit, filename):
                            method,
                            ordered,
                            byunit,
-                           ruler.ideology]
+                           iteration['Ruler'].ideology]
             myfile.writerow(current_row)
 
     print 'File successfully written!'
@@ -90,7 +91,7 @@ if __name__ == "__main__":
     baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
     R = 300
     leonidas = Ruler(0)
-    original_sparta = Army(3, 3, 20, 0)
+    original_sparta = Army(5, 4, 20, leonidas)
     original_sparta.fill()
 
     for mm in ['seniority', 'ideology', 'random', 'quality']:

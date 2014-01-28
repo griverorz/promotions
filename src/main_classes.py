@@ -118,14 +118,13 @@ class Ruler(object):
 
 class Army(Soldier):
     """ An ordered collection of soldiers """
-    def __init__(self, unit_size, top_rank, top_age, id_ruler = 0):
+    def __init__(self, unit_size, top_rank, top_age, ruler):
         self.unit_size = unit_size
         self.top_rank = top_rank
         self.top_age = top_age
         self.units = generate_army_codes(self.top_rank, self.unit_size)
         self.data = dict.fromkeys(self.units)
-        self.id_ruler = id_ruler
-        self.data["Ruler"] = self.id_ruler
+        self.data["Ruler"] = ruler
 
     def fill(self):
         for unit in self.units:
@@ -137,7 +136,6 @@ class Army(Soldier):
             qq = random.uniform(0, 1)
             ii = random.uniform(-1, 1)
             self.data[unit] = Soldier(rr, ss, aa, qq, ii, unit)
-        self.data['Ruler'] = Ruler(self.id_ruler)
 
     def __str__(self):
         chars = "Soldiers: " + str(len(self.data)) + \
@@ -232,19 +230,19 @@ class Army(Soldier):
 
         while openpos:
             toreplace = openpos[0]
-            print "Replacing {}...".format(toreplace)
+            # print "Replacing {}...".format(toreplace)
             slack = 1            
             pool = self.up_for_promotion(toreplace, ordered, byunit, 1)
 
             while not pool and (self.unit_to_rank(toreplace) - slack) > 1:
                 slack += 1
                 pool = self.up_for_promotion(toreplace, ordered, byunit, slack)
-                print "Looking one level deeper"
+                # print "Looking one level deeper"
 
             pool = list(set(pool).difference(set(unavail)))
 
             if not pool:
-                print "\tCreating {}'s holder".format(toreplace)
+                # print "\tCreating {}'s holder".format(toreplace)
                 rr = self.unit_to_rank(toreplace)
                 aa = self.top_age - 1
                 ss = 0
@@ -257,7 +255,7 @@ class Army(Soldier):
 
             else:
                 idx = self.picker(toreplace, pool, method)
-                print "\tPromoting {}...".format(idx)
+                # print "\tPromoting {}...".format(idx)
                 self.data[toreplace] = deepcopy(self.data[idx])
                 self.data[toreplace].seniority = 0
                 self.data[toreplace].rank = self.unit_to_rank(toreplace)
@@ -329,4 +327,4 @@ class Army(Soldier):
         nodupes = len(set(self.data.values())) is len(self.data.keys())
         if not novacancies or not consistent or not check_units or not nodupes:
             ftest = False
-        print "Army passes all tests: {}".format(ftest)
+        # print "Army passes all tests: {}".format(ftest)
