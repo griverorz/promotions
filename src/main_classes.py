@@ -11,6 +11,7 @@ import numpy as np
 from collections import defaultdict
 from copy import deepcopy
 from igraph import Graph
+import operator
 
 class Soldier(object):
     """ A soldier """
@@ -26,7 +27,7 @@ class Soldier(object):
         self.ideology = ideology
         self.unit = unit
         self.alive = True
-        self.utility = (age - rank)*quality*seniority
+        self.utility = (self.age - self.rank)**2*self.quality*self.seniority
 
     def __str__(self):
         chars = 'ID: '+ str(self.id) +                    \
@@ -125,6 +126,8 @@ class Army(Soldier):
         self.units = generate_army_codes(self.top_rank, self.unit_size)
         self.data = dict.fromkeys(self.units)
         self.data["Ruler"] = ruler
+        self.uquality = dict.fromkeys(self.units)
+        self.factions = dict.fromkeys(self.get_rank(self.top_rank))
 
     def fill(self):
         for unit in self.units:
@@ -270,7 +273,6 @@ class Army(Soldier):
                     openpos = sorted(openpos, key = lambda x: self.unit_to_rank(idx),
                                      reverse = True)                
 
-
     def network(self, distance = 1/5.):
         tr = self.unit_size
         nw = np.zeros((tr, tr), int)
@@ -284,7 +286,9 @@ class Army(Soldier):
                         nw[i, j], nw[j, i] = 1, 1
                     else:
                         nw[i, j], nw[j, i] = 0, 0
-        return Graph.Adjacency(nw.tolist()).as_undirected()
+        g = Graph.Adjacency(nw.tolist()).as_undirected()
+        g.vs["label"] = range(1, self.top_rank + 1)
+        return g
 
     def pass_time(self):
         for i in self.units:
@@ -313,6 +317,7 @@ class Army(Soldier):
         self.promote(openpos, method, ordered, byunit)
         self.pass_time()
         self.recruit_soldiers()
+        self.get_quality()
         self.test()
 
     def test(self):
@@ -328,3 +333,25 @@ class Army(Soldier):
         if not novacancies or not consistent or not check_units or not nodupes:
             ftest = False
         # print "Army passes all tests: {}".format(ftest)
+
+    def get_quality(self):
+        def _iq(x):
+            qq = self.data[x].quality * self.data[x].rank * self.data[x].seniority
+            return qq
+        for i in self.units:
+            gq = map(_iq, self.get_subordinates(i))
+            self.uquality[i] = reduce(lambda x, y: x + y, gq, 1) * _iq(i)
+
+    def risk(self):
+        nn = self.network()
+        nc = nn.clusters()
+        tmp_factions = dict.fromkeys([i for i in range(len(nc))])
+        for i in range(len(nc)):
+            idx = [nn.vs["label"][sold] for sold in nc[i]]
+            tmp_factions[i] = (idx, sum(self.uquality[uu]*
+                          (self[uu].ideology - self["Ruler"].ideology)**2
+                          for uu in idx))
+        ## Format for class
+        for i in tmp_factions.keys():
+            for j in tmp_factions[i][0]:
+                self.factions[j] = (i, tmp_factions[i][1])

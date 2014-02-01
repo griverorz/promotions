@@ -31,6 +31,7 @@ def simulate(army, ruler, R, method, ordered, byunit):
         if it % 10 is 0:
             print "Iteration {}".format(it)
         army.run_promotion(method, ordered, byunit)
+        army.risk()
         full_sim[it] = deepcopy(army)
         it += 1
     return full_sim
@@ -44,6 +45,13 @@ def simulation_to_csv(ruler, simulation, method, ordered, byunit, filename):
     for i in range(1, R):
         for j in simulation[i].units:
             iteration = simulation[i].data[j].report()
+            ff = dict.fromkeys(simulation[i].get_rank(simulation[i].top_rank))
+            ## Assign none to non-generals factions
+            if len(str(j)) is 1:
+                ff0, ff1 = simulation[i].factions[j][0], simulation[i].factions[j][1]
+            else:
+                ff0, ff1 = None, None
+
             current_row = [i,
                            iteration['id'],
                            iteration['age'],
@@ -52,10 +60,13 @@ def simulation_to_csv(ruler, simulation, method, ordered, byunit, filename):
                            iteration['unit'],
                            iteration['quality'],
                            iteration['ideology'],
+                           simulation[i].uquality[j],
+                           ff0,
+                           ff1,
                            method,
                            ordered,
                            byunit,
-                           iteration['Ruler'].ideology]
+                           ruler.ideology]
             myfile.writerow(current_row)
 
     print 'File successfully written!'
@@ -76,6 +87,9 @@ def newtable():
         UNIT integer,
         QUALITY double precision,
         IDEOLOGY double precision,
+        UQUALITY double precision,
+        WHICH_FACTION integer,
+        FORCE_FACTION double precision,
         METHOD varchar,
         CONSTRAINTS varchar,
         FROM_WITHIN varchar,
@@ -91,7 +105,7 @@ if __name__ == "__main__":
     baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
     R = 300
     leonidas = Ruler(0)
-    original_sparta = Army(5, 4, 20, leonidas)
+    original_sparta = Army(4, 4, 20, leonidas)
     original_sparta.fill()
 
     for mm in ['seniority', 'ideology', 'random', 'quality']:

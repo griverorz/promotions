@@ -30,21 +30,21 @@ con <- dbConnect(drv,
                  dbname = 'promotions')
 
 ideology <- dbGetQuery(con,
-"select AVG(IDEOLOGY) AS IDEOLOGY, ITERATION, RANK,
-        METHOD, CONSTRAINTS, RULER_IDEOLOGY, FROM_WITHIN
+"select avg(ideology) as ideology, iteration, rank,
+        method, constraints, ruler_ideology, from_within
 from simp
-group by ITERATION, RANK, METHOD, CONSTRAINTS, RULER_IDEOLOGY, FROM_WITHIN")
+group by iteration, rank, method, constraints, ruler_ideology, from_within")
 dbDisconnect(con)
 
 p <- ggplot(ideology, aes(x = iteration, y = ideology, colour = factor(rank)))
 pq <- p + geom_line() +
-  facet_grid(method ~ constraints + from_within) +
+  facet_grid(method + constraints ~ from_within) +
   scale_colour_discrete("Rank") +
   scale_y_continuous(limits = c(-1, 1)) +
   xlab("Iteration") +
   ylab("Ideology")
 
-file <- "~/Documents/wip/promotions/paper/img/ideology.pdf"
+file <- "~/Documents/wip/promotions/txt/img/ideology.pdf"
 ggsave(file, pq)
 
 #################### DISTRIBUTION OF QUALITY ####################
@@ -68,14 +68,14 @@ pq <- p + geom_line() +
   xlab("Iteration") +
   ylab("Ideology")
 
-file <- "~/Documents/wip/promotions/paper/img/quality.pdf"
+file <- "~/Documents/wip/promotions/txt/img/quality.pdf"
 ggsave(file, pq)
 
 #################### INDIVIDUAL TRAJECTORIES ####################
 con <- dbConnect(drv,
                  dbname = 'promotions')
 
-simp <- dbSendQuery(con,
+simp <- dbGetQuery(con,
         "select id, method, constraints
          from
              (select *, rank() over (partition by method, constraints 
@@ -84,8 +84,6 @@ simp <- dbSendQuery(con,
               where rank = 4 and iteration > 20)
          subquery
          where rrank = 1;")
-simp <- fetch(simp, -1)
-
 
 full <- dbSendQuery(con, "select * from simp")
 full <- fetch(full, -1)
