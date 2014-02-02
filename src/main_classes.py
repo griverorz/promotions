@@ -141,7 +141,7 @@ class Army(Soldier):
             self.data[unit] = Soldier(rr, ss, aa, qq, ii, unit)
 
     def __str__(self):
-        chars = "Soldiers: " + str(len(self.data)) + \
+        chars = "Soldiers: " + str(len(self.units)) + \
                 "\nUnit size: " + str(self.unit_size) + \
                 "\nTop rank: " + str(self.top_rank)
         return chars
@@ -230,7 +230,9 @@ class Army(Soldier):
         unavail = []
 
         openpos = filter(lambda x: self.unit_to_rank(x) is not 1, openpos)
-
+        openpos = sorted(openpos, key = lambda x: self.unit_to_rank(x),
+                         reverse = True)                
+        
         while openpos:
             toreplace = openpos[0]
             # print "Replacing {}...".format(toreplace)
@@ -243,7 +245,7 @@ class Army(Soldier):
                 # print "Looking one level deeper"
 
             pool = list(set(pool).difference(set(unavail)))
-
+            
             if not pool:
                 # print "\tCreating {}'s holder".format(toreplace)
                 rr = self.unit_to_rank(toreplace)
@@ -269,7 +271,7 @@ class Army(Soldier):
                 openpos.pop(0)
         
                 if self.unit_to_rank(idx) > 1:
-                    openpos.append(idx)
+                    openpos = [idx] + openpos
                     openpos = sorted(openpos, key = lambda x: self.unit_to_rank(idx),
                                      reverse = True)                
 
@@ -287,7 +289,7 @@ class Army(Soldier):
                     else:
                         nw[i, j], nw[j, i] = 0, 0
         g = Graph.Adjacency(nw.tolist()).as_undirected()
-        g.vs["label"] = range(1, self.top_rank + 1)
+        g.vs["label"] = range(1, self.unit_size + 1)
         return g
 
     def pass_time(self):
@@ -309,8 +311,7 @@ class Army(Soldier):
             ss = random.choice(range(min(aa, rr), max(aa, rr) + 1))             
             qq = random.uniform(0, 1)
             ii = random.uniform(-1, 1)
-            self.data[mia] = Soldier(rr, ss, aa, qq, ii, mia)        
-        return self
+            self.data[mia] = Soldier(rr, ss, aa, qq, ii, mia)  
 
     def run_promotion(self, method, ordered, byunit):
         openpos = self.up_for_retirement()
@@ -323,16 +324,21 @@ class Army(Soldier):
     def test(self):
         ftest = True
         # No empty position
-        novacancies = any(i is not None for i in self.data.values())
+        tests = dict.fromkeys(["novacancies", "allalive",
+                               "rconsistent", "uconsistent", "nodupes"])
+        tests["novacancies"] = any(i is not None for i in self.data.values())
         # Position in agreement with rank
-        consistent = [self.data[i].rank is self.unit_to_rank(i) for i in self.units]
+        tests["rconsistent"] = all([self.data[i].rank is self.unit_to_rank(i) 
+                               for i in self.units])
+        tests["allalive"] = all([self.data[i].alive for i in self.units])
         # Units in agreement
-        check_units = [self.data[i].unit is i for i in self.units]
+        tests["uconsistent"] = all([self.data[i].unit is i for i in self.units])
         # No duplicates
-        nodupes = len(set(self.data.values())) is len(self.data.keys())
-        if not novacancies or not consistent or not check_units or not nodupes:
-            ftest = False
-        # print "Army passes all tests: {}".format(ftest)
+        tests["nodupes"] = len(set(self.data.values())) == len(self.data.keys())
+        # return tests
+        if not all(tests.values()):
+            fails = [tests.keys()[i] for i in all_indices(False, tests.values())]
+            print "Fails tests: " + ', '.join(fails)
 
     def get_quality(self):
         def _iq(x):
@@ -346,11 +352,9 @@ class Army(Soldier):
         nn = self.network()
         nc = nn.clusters()
         tmp_factions = dict.fromkeys([i for i in range(len(nc))])
-        for i in range(len(nc)):
+        for i in tmp_factions.keys():
             idx = [nn.vs["label"][sold] for sold in nc[i]]
-            tmp_factions[i] = (idx, sum(self.uquality[uu]*
-                          (self[uu].ideology - self["Ruler"].ideology)**2
-                          for uu in idx))
+            tmp_factions[i] = (idx, sum(self.uquality[uu] for uu in idx))
         ## Format for class
         for i in tmp_factions.keys():
             for j in tmp_factions[i][0]:

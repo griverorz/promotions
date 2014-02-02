@@ -107,8 +107,8 @@ if __name__ == "__main__":
     leonidas = Ruler(0)
     original_sparta = Army(4, 4, 20, leonidas)
     original_sparta.fill()
-
-    for mm in ['seniority', 'ideology', 'random', 'quality']:
+# , 'seniority', 'random', 'quality'
+    for mm in ['ideology']:
         for oo in [True, False]:
             for uu in [True, False]:
                 sparta = deepcopy(original_sparta)
