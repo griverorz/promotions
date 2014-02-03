@@ -97,25 +97,21 @@ class Soldier(object):
     def kill(self):
         self.alive = False
 
-    def reuse(self):
-        self.age = 1 + int(round(np.random.gamma(1, 2, 1)))
-        self.rank = 1
-        self.quality = random.uniform(0, 1)
-        self.ideology = random.uniform(-1, 1)
-        self.seniority = 1
-        self.id = next(self.id_generator)
-        self.alive = True
-
 
 class Ruler(object):
     """ The ruler """
-    def __init__(self, ideology):
+    def __init__(self, ideology, params):
         self.ideology = ideology
+        self.parameters = {"ideology": params[0], 
+                           "quality": params[1], 
+                           "seniority": params[2]}
 
     def __str__(self):
         characteristics = "\nIdeology: " + str(self.ideology)
         return characteristics
 
+    def adapt(self):
+        return self.parameters
 
 class Army(Soldier):
     """ An ordered collection of soldiers """
@@ -136,8 +132,8 @@ class Army(Soldier):
             refscale = self.top_age - 1
             aa = int(round(np.random.beta(rr, refbase, 1) * refscale + 1))
             ss = random.choice(range(min(aa, rr), max(aa, rr) + 1))
-            qq = random.uniform(0, 1)
-            ii = random.uniform(-1, 1)
+            qq = self.fill_quality()
+            ii = self.fill_ideology()
             self.data[unit] = Soldier(rr, ss, aa, qq, ii, unit)
 
     def __str__(self):
@@ -160,6 +156,12 @@ class Army(Soldier):
         for unit, who in self.data.iteritems():
             if who == soldier:
                return(unit)
+
+    def fill_quality(self):
+        return float(np.random.beta(2, 4, 1))
+
+    def fill_ideology(self):
+        return float(2*np.random.beta(3, 3, 1) - 1)
 
     def find_subordinates(self, unit):
         subs_list = [unit]
@@ -201,32 +203,27 @@ class Army(Soldier):
                 pool.append(i)
         return pool
 
-    def picker(self, openpos, listpool, method):
+    def picker(self, openpos, listpool):
 
-        if method is 'seniority':
-            refval = max([self.data[i].seniority for i in listpool])
-            idx = [i for i in listpool if self.data[i].seniority is refval][0]
+        superior = self.get_superior(openpos)
+        if superior is 'Ruler':
+            s_ideology = self.data['Ruler'].ideology
+        else:
+            s_ideology = self.data[superior].ideology
 
-        if method is 'quality':
-            refval = max([self.data[i].quality for i in listpool])
-            idx = [i for i in listpool if self.data[i].quality is refval][0]
+        params = self["Ruler"].parameters
 
-        if method is 'ideology':
-            superior = self.get_superior(openpos)
-            if superior is 'Ruler':
-                s_ideology = self.data['Ruler'].ideology
-            else:
-                s_ideology = self.data[superior].ideology
-            diff_ideo = [(self.data[i].ideology - s_ideology) for i in listpool]
-            mindiff = min(diff_ideo)
-            idx = listpool[diff_ideo.index(mindiff)]
-            
-        if method is 'random':
-            idx = random.choice(listpool)
+        qq = [params["quality"]*self.data[i].quality for i in listpool]
+        ss = [params["seniority"]*self.data[i].seniority for i in listpool]
+        ii = [params["ideology"]*abs(self.data[i].ideology - s_ideology) 
+              for i in listpool]        
 
+        score = [qq[i] + ss[i] - ii[i] for i in range(len(listpool))]
+        all_idx = all_indices(max(score), score)
+        idx = listpool[random.choice(all_idx)]
         return idx
 
-    def promote(self, openpos, method, ordered, byunit):
+    def promote(self, openpos, ordered, byunit):
         unavail = []
 
         openpos = filter(lambda x: self.unit_to_rank(x) is not 1, openpos)
@@ -242,24 +239,24 @@ class Army(Soldier):
             while not pool and (self.unit_to_rank(toreplace) - slack) > 1:
                 slack += 1
                 pool = self.up_for_promotion(toreplace, ordered, byunit, slack)
-                # print "Looking one level deeper"
+                print "Looking one level deeper"
 
             pool = list(set(pool).difference(set(unavail)))
             
             if not pool:
-                # print "\tCreating {}'s holder".format(toreplace)
+                print "\tCreating {}'s holder".format(toreplace)
                 rr = self.unit_to_rank(toreplace)
                 aa = self.top_age - 1
                 ss = 0
-                qq = random.uniform(0, 0.25)
-                ii = random.uniform(-1, 1)
+                qq = self.fill_quality()
+                ii = self.fill_ideology()
                 self.data[toreplace] = Soldier(rr, ss, aa, qq, ii, toreplace)        
 
                 openpos.pop(0)
                 unavail.append(toreplace)
 
             else:
-                idx = self.picker(toreplace, pool, method)
+                idx = self.picker(toreplace, pool)
                 # print "\tPromoting {}...".format(idx)
                 self.data[toreplace] = deepcopy(self.data[idx])
                 self.data[toreplace].seniority = 0
@@ -275,7 +272,10 @@ class Army(Soldier):
                     openpos = sorted(openpos, key = lambda x: self.unit_to_rank(idx),
                                      reverse = True)                
 
-    def network(self, distance = 1/5.):
+    def network(self):
+        def _make_link(i, j):
+            diff = abs(i.ideology - j.ideology)/2.
+            return np.random.binomial(1, 1 - diff)
         tr = self.unit_size
         nw = np.zeros((tr, tr), int)
         gg = self.get_rank(self.top_rank)
@@ -284,7 +284,7 @@ class Army(Soldier):
                 if i is j:
                     nw[i, j] = 0
                 else:
-                    if self.data[gg[i]].ideology - self.data[gg[j]].ideology < distance:
+                    if _make_link(self[gg[i]], self[gg[j]]) is 1:
                         nw[i, j], nw[j, i] = 1, 1
                     else:
                         nw[i, j], nw[j, i] = 0, 0
@@ -304,18 +304,17 @@ class Army(Soldier):
                                self.get_rank(1))
 
         for mia in dead_soldiers:
-            rr = 1
-            refbase = (self.top_rank + 1) - rr
+            refbase = self.top_rank
             refscale = self.top_age - 1
-            aa = int(round(np.random.beta(rr, refbase, 1) * refscale + 1))
-            ss = random.choice(range(min(aa, rr), max(aa, rr) + 1))             
-            qq = random.uniform(0, 1)
-            ii = random.uniform(-1, 1)
-            self.data[mia] = Soldier(rr, ss, aa, qq, ii, mia)  
-
-    def run_promotion(self, method, ordered, byunit):
+            aa = int(round(np.random.beta(1, refbase, 1) * refscale + 1))
+            ss = random.choice(range(min(aa, 1), max(aa, 1) + 1))            
+            qq = self.fill_quality()
+            ii = self.fill_ideology()
+            self.data[mia] = Soldier(1, ss, aa, qq, ii, mia)  
+            
+    def run_promotion(self, ordered, byunit):
         openpos = self.up_for_retirement()
-        self.promote(openpos, method, ordered, byunit)
+        self.promote(openpos, ordered, byunit)
         self.pass_time()
         self.recruit_soldiers()
         self.get_quality()

@@ -30,7 +30,7 @@ def simulate(army, ruler, R, method, ordered, byunit):
     while it < R:
         if it % 10 is 0:
             print "Iteration {}".format(it)
-        army.run_promotion(method, ordered, byunit)
+        army.run_promotion(ordered, byunit)
         army.risk()
         full_sim[it] = deepcopy(army)
         it += 1
@@ -104,10 +104,9 @@ if __name__ == "__main__":
     newtable()
     baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
     R = 300
-    leonidas = Ruler(0)
-    original_sparta = Army(4, 4, 20, leonidas)
+    leonidas = Ruler(0.5, (0, 1, 0))
+    original_sparta = Army(3, 3, 15, leonidas)
     original_sparta.fill()
-# , 'seniority', 'random', 'quality'
     for mm in ['ideology']:
         for oo in [True, False]:
             for uu in [True, False]:

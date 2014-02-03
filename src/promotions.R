@@ -51,22 +51,20 @@ ggsave(file, pq)
 con <- dbConnect(drv,
                  dbname = 'promotions')
 
-simp <- dbSendQuery(con,
-"select avg(QUALITY) AS QUALITY, ITERATION, RANK,
-        METHOD, CONSTRAINTS, RULER_IDEOLOGY
+quality <- dbGetQuery(con,
+"select avg(quality) as quality, iteration, rank,
+        method, constraints, ruler_ideology, from_within
 from simp
-group by ITERATION, RANK, METHOD, CONSTRAINTS, RULER_IDEOLOGY")
-
-quality <- fetch(simp, -1)
+group by iteration, rank, method, constraints, ruler_ideology, from_within;")
 dbDisconnect(con)
 
 p <- ggplot(quality, aes(x = iteration, y = quality, colour = factor(rank)))
 pq <- p + geom_line() +
-  facet_grid(method ~ constraints) +
+  facet_grid(method + constraints ~ from_within) +
   scale_colour_discrete("Rank") +
   scale_y_continuous(limits = c(-1, 1)) +
   xlab("Iteration") +
-  ylab("Ideology")
+  ylab("Quality")
 
 file <- "~/Documents/wip/promotions/txt/img/quality.pdf"
 ggsave(file, pq)
@@ -81,12 +79,11 @@ simp <- dbGetQuery(con,
              (select *, rank() over (partition by method, constraints 
                                      order by random()) as rrank
               from simp
-              where rank = 4 and iteration > 20)
+              where rank = 4 and iteration > 80)
          subquery
          where rrank = 1;")
 
-full <- dbSendQuery(con, "select * from simp")
-full <- fetch(full, -1)
+full <- dbGetQuery(con, "select * from simp")
 
 dbDisconnect(con)
 
@@ -105,5 +102,21 @@ p <- ggplot(generals, aes(x = age, y = rank))
 pq <- p + geom_line() +
   geom_point(shape = 1) +
   facet_grid(constraints ~ method) +
-  xlab("Iteration") +
+  xlab("Age") +
   ylab("Rank")
+
+#################### FACTIONS ####################
+con <- dbConnect(drv,
+                 dbname = 'promotions')
+
+factions <- dbGetQuery(con,
+"select count(distinct which_faction), iteration,
+        method, constraints, from_within
+from simp
+where which_faction is not null
+group by iteration, method, constraints, from_within;")
+dbDisconnect(con)
+
+p <- ggplot(factions, aes(x = iteration, y = count))
+pq <- p + geom_line() +
+  facet_grid(method + constraints ~ from_within) 
