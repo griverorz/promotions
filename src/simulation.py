@@ -2,10 +2,7 @@
 
 '''
 Simulation of promotions in a military
-PAPER: Promotions in ongoing hierarchical systems
 Author: @griverorz
-
-Started: 21Feb2012
 '''
 
 import pdb
@@ -20,24 +17,61 @@ from copy import deepcopy
 import igraph 
 
 ## auxiliary files
-from main_classes import Soldier, Army, Ruler
+from classdef import Soldier, Army, Ruler
 
-def simulate(army, ruler, R, method, ordered, byunit):
+def external_risk(army):
+    extval = np.mean([army.pquality[i] for i in army.get_rank(army.top_rank)])
+    return 1 - extval        
+
+def adapt(army, varrisk, olddir):
+    '''
+    ruler self-explanatory
+    drisk is a measure of risk differential associated with the current army
+    d0 is the initial direction
+    '''
+    pp = army["Ruler"].parameters.values()
+    step = 0.5
+    # creates random movement
+    rdir = np.random.uniform(0, np.pi/2, len(pp))
+    rdir = map(lambda x: x*step, rdir/np.linalg.norm(rdir))
+    if varrisk > 0:
+        rdir = [rdir[i]*-1*np.sign(olddir[i]) for i in range(len(pp))]
+    else:
+        rdir = [rdir[i]*np.sign(olddir[i]) for i in range(len(pp))]
+    nvector = [pp[i] + rdir[i] for i in range(len(pp))]
+    return nvector, rdir
+
+def simulate(army, R, ordered, byunit):
     full_sim = dict.fromkeys(range(R))
     full_sim[0] = deepcopy(army)
 
     it = 1    
+
+    risk_var = -1
+    olddir = np.random.uniform(-10, 10, len(army["Ruler"].parameters))
+    
     while it < R:
         if it % 10 is 0:
             print "Iteration {}".format(it)
+
+        risk0 = external_risk(army)
         army.run_promotion(ordered, byunit)
-        army.risk()
+    
+        newpars, newdir = adapt(army, risk_var, olddir)
+        army["Ruler"].update_parameters(newpars)
+
+        risk1 = external_risk(army)
+        risk_var = 1
+        if risk1 < risk0:
+            risk_var = -1
+        oldpars, olddir = newpars, newdir
+        
         full_sim[it] = deepcopy(army)
         it += 1
     return full_sim
 
 # write results into csv
-def simulation_to_csv(ruler, simulation, method, ordered, byunit, filename):
+def simulation_to_csv(simulation, ordered, byunit, filename):
     myfile = csv.writer(open(filename, 'wb'))
 
     R = len(simulation)
@@ -63,10 +97,12 @@ def simulation_to_csv(ruler, simulation, method, ordered, byunit, filename):
                            simulation[i].uquality[j],
                            ff0,
                            ff1,
-                           method,
+                           simulation[i]["Ruler"].parameters["ideology"],
+                           simulation[i]["Ruler"].parameters["quality"],
+                           simulation[i]["Ruler"].parameters["seniority"],
                            ordered,
                            byunit,
-                           ruler.ideology]
+                           simulation[i]["Ruler"].ideology]
             myfile.writerow(current_row)
 
     print 'File successfully written!'
@@ -90,7 +126,9 @@ def newtable():
         UQUALITY double precision,
         WHICH_FACTION integer,
         FORCE_FACTION double precision,
-        METHOD varchar,
+        PARAMS_IDEO double precision,
+        PARAMS_QUAL double precision,
+        PARAMS_SENR double precision,
         CONSTRAINTS varchar,
         FROM_WITHIN varchar,
         RULER_IDEOLOGY double precision);
@@ -101,24 +139,26 @@ def newtable():
 
 
 if __name__ == "__main__":
-    newtable()
+    # newtable()
     baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
     R = 300
-    leonidas = Ruler(0.5, (0, 1, 0))
+    params = (0, 1, 0)
+    leonidas = Ruler(0.5, params)
     original_sparta = Army(3, 3, 15, leonidas)
     original_sparta.fill()
-    for mm in ['ideology']:
-        for oo in [True, False]:
-            for uu in [True, False]:
-                sparta = deepcopy(original_sparta)
-                print "Method {}, Ordered {}, Internal {}".format(mm, oo, uu)
-                simp = simulate(sparta, leonidas, R, mm, oo, uu)
-                fname = baseloc+str(mm)+'_'+str(oo)+'_'+str(uu)+'.txt' 
-                simulation_to_csv(leonidas, simp, mm, oo, uu, fname)
-                
-                conn = psycopg2.connect("dbname=promotions")
-                cur = conn.cursor()
-                cur.execute('COPY "simp" FROM %s CSV;', [str(fname)])
-                conn.commit()
-                cur.close()
-                conn.close()
+    original_sparta.get_quality()
+    original_sparta.risk()
+    for oo in [True, False]:
+        for uu in [True, False]:
+            sparta = deepcopy(original_sparta)
+            print "Method {}, Ordered {}, Internal {}".format(params, oo, uu)
+            simp = simulate(sparta, R, oo, uu)
+            fname = baseloc+'_'+str(oo)+'_'+str(uu)+'.txt' 
+            simulation_to_csv(simp, oo, uu, fname)
+            
+            # conn = psycopg2.connect("dbname=promotions")
+            # cur = conn.cursor()
+            # cur.execute('COPY "simp" FROM %s CSV;', [str(fname)])
+            # conn.commit()
+            # cur.close()
+            # conn.close()
