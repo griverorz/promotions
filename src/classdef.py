@@ -30,12 +30,7 @@ class Soldier(object):
         self.utility = (self.age - self.rank)**2*self.quality*self.seniority
 
     def __str__(self):
-        chars = 'Rank: {}, \
-        \nSeniority: {}, \
-        \nAge: {}, \ 
-        \nQuality: {}, \ 
-        \nIdeology: {}, \
-        \nAlive: {}'.format(
+        chars = 'Rank: {}, \nSeniority: {}, \nAge: {}, \nQuality: {}, \nIdeology: {}, \nAlive: {}'.format(
             self.rank, 
             self.seniority,
             self.age, 
@@ -107,20 +102,19 @@ class Ruler(object):
     def __init__(self, ideology, params):
         self.ideology = ideology
         self.parameters = {"ideology": params[0], 
-                           "quality": params[1], 
-                           "seniority": params[2]}
+                           "quality": params[1]}
+                           # "seniority": params[2}
         
     def __str__(self):
-        chars = "Ideology: {}, \
-        \nParameters: {}".format(
+        chars = "Ideology: {}, \nParameters: {}".format(
             self.ideology, 
             self.parameters.values())
         return chars
 
     def update_parameters(self, newparams):
         self.parameters = {"ideology": newparams[0], 
-                           "quality": newparams[1], 
-                           "seniority": newparams[2]}
+                           "quality": newparams[1]}
+                           # "seniority": newparams[2]}
         
 class Army(Soldier):
     """ An ordered collection of soldiers """
@@ -147,9 +141,7 @@ class Army(Soldier):
             self.data[unit] = Soldier(rr, ss, aa, qq, ii, unit)
 
     def __str__(self):
-        chars = "Soldiers: {}, \
-        \nUnit size: {}, \ 
-        \nTop rank: {}".format(
+        chars = "Soldiers: {}, \nUnit size: {}, \nTop rank: {}".format(
             len(self.units), 
             self.unit_size, 
             self.top_rank)
@@ -226,11 +218,11 @@ class Army(Soldier):
         params = self["Ruler"].parameters
 
         qq = [params["quality"]*self.data[i].quality for i in listpool]
-        ss = [params["seniority"]*self.data[i].seniority for i in listpool]
+        # ss = [params["seniority"]*self.data[i].seniority for i in listpool]
         ii = [params["ideology"]*abs(self.data[i].ideology - s_ideo) 
               for i in listpool]        
 
-        score = [qq[i] + ss[i] - ii[i] for i in range(len(listpool))]
+        score = [qq[i] - ii[i] for i in range(len(listpool))]
         all_idx = all_indices(max(score), score)
         ## random choice only has grip when all_idx > 0
         ## and that only happens when there are ties

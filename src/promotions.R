@@ -31,14 +31,16 @@ con <- dbConnect(drv,
 
 ideology <- dbGetQuery(con,
 "select avg(ideology) as ideology, iteration, rank,
-        method, constraints, ruler_ideology, from_within
+        constraints, ruler_ideology, from_within, 
+        params_ideo, params_qual
 from simp
-group by iteration, rank, method, constraints, ruler_ideology, from_within")
+group by iteration, rank, constraints, ruler_ideology, from_within, 
+         params_ideo, params_qual;")
 dbDisconnect(con)
 
 p <- ggplot(ideology, aes(x = iteration, y = ideology, colour = factor(rank)))
 pq <- p + geom_line() +
-  facet_grid(method + constraints ~ from_within) +
+  facet_grid(constraints ~ from_within) +
   scale_colour_discrete("Rank") +
   scale_y_continuous(limits = c(-1, 1)) +
   xlab("Iteration") +
@@ -53,14 +55,41 @@ con <- dbConnect(drv,
 
 quality <- dbGetQuery(con,
 "select avg(quality) as quality, iteration, rank,
-        method, constraints, ruler_ideology, from_within
+        constraints, ruler_ideology, from_within,
+        params_ideo, params_qual, params_senr
 from simp
-group by iteration, rank, method, constraints, ruler_ideology, from_within;")
+group by iteration, rank, constraints, ruler_ideology, from_within, 
+        params_ideo, params_qual, params_senr;")
 dbDisconnect(con)
 
 p <- ggplot(quality, aes(x = iteration, y = quality, colour = factor(rank)))
 pq <- p + geom_line() +
-  facet_grid(method + constraints ~ from_within) +
+  facet_grid(constraints ~ from_within) +
+  scale_colour_discrete("Rank") +
+  scale_y_continuous(limits = c(-1, 1)) +
+  xlab("Iteration") +
+  ylab("Quality")
+
+file <- "~/Documents/wip/promotions/txt/img/quality.pdf"
+ggsave(file, pq)
+
+#################### PARAMETERS ####################
+con <- dbConnect(drv,
+                 dbname = 'promotions')
+
+params <- dbGetQuery(con,
+"select avg(params_ideo) as pideo,
+        avg(params_qual) as pqual,
+        iteration,
+        constraints, ruler_ideology, from_within
+from simp
+group by iteration, constraints, ruler_ideology, from_within;")
+dbDisconnect(con)
+
+p <- ggplot(params, aes(x = pideo, y = pqual))
+pq <- p + geom_line() +
+  facet_grid(constraints ~ from_within)
+
   scale_colour_discrete("Rank") +
   scale_y_continuous(limits = c(-1, 1)) +
   xlab("Iteration") +
