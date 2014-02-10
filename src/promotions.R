@@ -56,10 +56,10 @@ con <- dbConnect(drv,
 quality <- dbGetQuery(con,
 "select avg(quality) as quality, iteration, rank,
         constraints, ruler_ideology, from_within,
-        params_ideo, params_qual, params_senr
+        params_ideo, params_qual
 from simp
 group by iteration, rank, constraints, ruler_ideology, from_within, 
-        params_ideo, params_qual, params_senr;")
+        params_ideo, params_qual;")
 dbDisconnect(con)
 
 p <- ggplot(quality, aes(x = iteration, y = quality, colour = factor(rank)))
@@ -83,20 +83,14 @@ params <- dbGetQuery(con,
         iteration,
         constraints, ruler_ideology, from_within
 from simp
-group by iteration, constraints, ruler_ideology, from_within;")
+group by iteration, constraints, ruler_ideology, from_within
+order by iteration;")
 dbDisconnect(con)
 
 p <- ggplot(params, aes(x = pideo, y = pqual))
-pq <- p + geom_line() +
+pq <- p + geom_path() +
   facet_grid(constraints ~ from_within)
 
-  scale_colour_discrete("Rank") +
-  scale_y_continuous(limits = c(-1, 1)) +
-  xlab("Iteration") +
-  ylab("Quality")
-
-file <- "~/Documents/wip/promotions/txt/img/quality.pdf"
-ggsave(file, pq)
 
 #################### INDIVIDUAL TRAJECTORIES ####################
 con <- dbConnect(drv,
