@@ -134,12 +134,12 @@ con <- dbConnect(drv,
 
 factions <- dbGetQuery(con,
 "select count(distinct which_faction), iteration,
-        method, constraints, from_within
+        constraints, from_within
 from simp
 where which_faction is not null
-group by iteration, method, constraints, from_within;")
+group by iteration, constraints, from_within;")
 dbDisconnect(con)
 
 p <- ggplot(factions, aes(x = iteration, y = count))
 pq <- p + geom_line() +
-  facet_grid(method + constraints ~ from_within) 
+  facet_grid(constraints ~ from_within) 

@@ -35,7 +35,6 @@ def above_coup(army):
     
 # def below_coup()
 
-
 def adapt(army, varrisk, olddir):
     '''
     ruler self-explanatory
@@ -43,14 +42,14 @@ def adapt(army, varrisk, olddir):
     d0 is the initial direction
     '''
     pp = army["Ruler"].parameters.values()
-    step = 1
+    step = abs(varrisk)
     # creates random movement
     rdir = np.random.uniform(-1, 1, len(pp))
     rdir = map(lambda x: x*step, rdir/np.linalg.norm(rdir))
     if varrisk <= 0:
         rdir = olddir
     else:
-        rdir = [rdir[i]*-1*np.sign(olddir[i]) for i in range(len(pp))]
+        rdir = [abs(rdir[i])*-1*np.sign(olddir[i]) for i in range(len(pp))]
     nvector = [pp[i] + rdir[i] for i in range(len(pp))]
     return nvector, rdir
 
@@ -63,7 +62,7 @@ def simulate(army, R, ordered, byunit):
     olddir = np.random.uniform(-1, 1, len(army["Ruler"].parameters))
     
     while it < R:
-        if it % 10 is 0:
+        if it % 50 is 0:
             print "Iteration {}".format(it)
 
         risk0 = 1/2.*above_coup(army) + 1/2.*external_risk(army)
@@ -162,11 +161,13 @@ if __name__ == "__main__":
             fname = baseloc+'sim_'+str(oo)+'_'+str(uu)+'.txt' 
             simulation_to_csv(simp, oo, uu, fname)
             
-            # conn = psycopg2.connect("dbname=promotions")
-            # cur = conn.cursor()
-            # cur.execute('COPY "simp" FROM %s CSV;', [str(fname)])
-            # conn.commit()
-            # cur.close()
-            # conn.close()
+            conn = psycopg2.connect("dbname=promotions")
+            cur = conn.cursor()
+            cur.execute('COPY "simp" FROM %s CSV;', [str(fname)])
+            conn.commit()
+            cur.close()
+            conn.close()
 
-
+qq = [simp[i]["Ruler"].parameters["quality"] for i in range(len(simp))]
+ii = [simp[i]["Ruler"].parameters["ideology"] for i in range(len(simp))]
+plot(qq, ii)
