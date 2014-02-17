@@ -12,8 +12,6 @@ theme_set(theme_bw())
 wd <- "/Users/gonzalorivero/Documents/wip/promotions"
 setwd(wd)
 
-
-
 ## ITERATION INTEGER,
 ## ID INTEGER,
 ## AGE INTEGER,
@@ -31,79 +29,86 @@ drv <- dbDriver("PostgreSQL")
 con <- dbConnect(drv,
                  dbname = 'promotions')
 
-simp <- dbSendQuery(con,
-"SELECT AVG(IDEOLOGY) AS IDEOLOGY, ITERATION, RANK,
-<<<<<<< local
-        METHOD, CONSTRAINTS, RULER_IDEOLOGY, FROM_WITHIN
-=======
-        METHOD, CONSTRAINTS, RULER_IDEOLOGY
->>>>>>> other
-FROM simp
-<<<<<<< local
-GROUP BY ITERATION, RANK, METHOD, CONSTRAINTS, RULER_IDEOLOGY, FROM_WITHIN")
-=======
-GROUP BY ITERATION, RANK, METHOD, CONSTRAINTS, RULER_IDEOLOGY")
->>>>>>> other
-
-ideology <- fetch(simp, -1)
+ideology <- dbGetQuery(con,
+"select replication, avg(ideology) as ideology, iteration, rank,
+        constraints, ruler_ideology, from_within, 
+        params_ideo, params_qual
+from simp
+group by replication, iteration, rank, constraints, ruler_ideology, from_within, 
+         params_ideo, params_qual;")
 dbDisconnect(con)
 
-p <- ggplot(ideology, aes(x = iteration, y = ideology, colour = factor(rank)))
+p <- ggplot(ideology, aes(x = iteration, y = ideology, 
+                          group = replication, colour = factor(rank)))
 pq <- p + geom_line() +
-<<<<<<< local
-  facet_grid(method ~ constraints + from_within) +
-=======
-  facet_grid(method ~ constraints) +
->>>>>>> other
+  facet_grid(constraints ~ from_within) +
   scale_colour_discrete("Rank") +
   scale_y_continuous(limits = c(-1, 1)) +
   xlab("Iteration") +
   ylab("Ideology")
 
-file <- "~/Documents/wip/promotions/paper/img/ideology.pdf"
+file <- "~/Documents/wip/promotions/txt/img/ideology.pdf"
 ggsave(file, pq)
 
 #################### DISTRIBUTION OF QUALITY ####################
 con <- dbConnect(drv,
                  dbname = 'promotions')
 
-simp <- dbSendQuery(con,
-"SELECT AVG(QUALITY) AS QUALITY, ITERATION, RANK,
-        METHOD, CONSTRAINTS, RULER_IDEOLOGY
-FROM simp
-GROUP BY ITERATION, RANK, METHOD, CONSTRAINTS, RULER_IDEOLOGY")
-
-quality <- fetch(simp, -1)
+quality <- dbGetQuery(con,
+"select avg(quality) as quality, iteration, rank,
+        constraints, ruler_ideology, from_within,
+        params_ideo, params_qual
+from simp
+group by iteration, rank, constraints, ruler_ideology, from_within, 
+        params_ideo, params_qual;")
 dbDisconnect(con)
 
 p <- ggplot(quality, aes(x = iteration, y = quality, colour = factor(rank)))
 pq <- p + geom_line() +
-  facet_grid(method ~ constraints) +
+  facet_grid(constraints ~ from_within) +
   scale_colour_discrete("Rank") +
   scale_y_continuous(limits = c(-1, 1)) +
   xlab("Iteration") +
-  ylab("Ideology")
+  ylab("Quality")
 
-file <- "~/Documents/wip/promotions/paper/img/quality.pdf"
+file <- "~/Documents/wip/promotions/txt/img/quality.pdf"
 ggsave(file, pq)
+
+#################### PARAMETERS ####################
+con <- dbConnect(drv,
+                 dbname = 'promotions')
+
+params <- dbGetQuery(con,
+"select replication, avg(params_ideo) as pideo,
+        avg(params_qual) as pqual,
+        iteration,
+        constraints, ruler_ideology, from_within
+from simp
+group by replication, iteration, constraints, ruler_ideology, from_within
+order by iteration;")
+dbDisconnect(con)
+
+## params0 <- params[params$iteration > 1000, ]
+p <- ggplot(params, aes(x = pideo, y = pqual, group = replication))
+pq <- p + geom_path(aes(group = replication)) +
+  facet_grid(constraints ~ from_within)
+print(pq)
 
 #################### INDIVIDUAL TRAJECTORIES ####################
 con <- dbConnect(drv,
                  dbname = 'promotions')
 
-simp <- dbSendQuery(con,
+simp <- dbGetQuery(con,
         "select id, method, constraints
          from
-             (select *, rank() over (partition by method, constraints order by random()) as rrank
+             (select *, rank() over (partition by method, constraints 
+                                     order by random()) as rrank
               from simp
-              where rank = 4 and iteration > 20)
+              where rank = 4 and iteration > 80)
          subquery
          where rrank = 1;")
-simp <- fetch(simp, -1)
 
-
-full <- dbSendQuery(con, "select * from simp")
-full <- fetch(full, -1)
+full <- dbGetQuery(con, "select * from simp")
 
 dbDisconnect(con)
 
@@ -122,5 +127,21 @@ p <- ggplot(generals, aes(x = age, y = rank))
 pq <- p + geom_line() +
   geom_point(shape = 1) +
   facet_grid(constraints ~ method) +
-  xlab("Iteration") +
+  xlab("Age") +
   ylab("Rank")
+
+#################### FACTIONS ####################
+con <- dbConnect(drv,
+                 dbname = 'promotions')
+
+factions <- dbGetQuery(con,
+"select count(distinct which_faction), iteration,
+        constraints, from_within
+from simp
+where which_faction is not null
+group by iteration, constraints, from_within;")
+dbDisconnect(con)
+
+p <- ggplot(factions, aes(x = iteration, y = count))
+pq <- p + geom_line() +
+  facet_grid(constraints ~ from_within) 
