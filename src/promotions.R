@@ -30,15 +30,16 @@ con <- dbConnect(drv,
                  dbname = 'promotions')
 
 ideology <- dbGetQuery(con,
-"select avg(ideology) as ideology, iteration, rank,
+"select replication, avg(ideology) as ideology, iteration, rank,
         constraints, ruler_ideology, from_within, 
         params_ideo, params_qual
 from simp
-group by iteration, rank, constraints, ruler_ideology, from_within, 
+group by replication, iteration, rank, constraints, ruler_ideology, from_within, 
          params_ideo, params_qual;")
 dbDisconnect(con)
 
-p <- ggplot(ideology, aes(x = iteration, y = ideology, colour = factor(rank)))
+p <- ggplot(ideology, aes(x = iteration, y = ideology, 
+                          group = replication, colour = factor(rank)))
 pq <- p + geom_line() +
   facet_grid(constraints ~ from_within) +
   scale_colour_discrete("Rank") +
@@ -78,19 +79,20 @@ con <- dbConnect(drv,
                  dbname = 'promotions')
 
 params <- dbGetQuery(con,
-"select avg(params_ideo) as pideo,
+"select replication, avg(params_ideo) as pideo,
         avg(params_qual) as pqual,
         iteration,
         constraints, ruler_ideology, from_within
 from simp
-group by iteration, constraints, ruler_ideology, from_within
+group by replication, iteration, constraints, ruler_ideology, from_within
 order by iteration;")
 dbDisconnect(con)
 
-p <- ggplot(params, aes(x = pideo, y = pqual))
-pq <- p + geom_path() +
+## params0 <- params[params$iteration > 1000, ]
+p <- ggplot(params, aes(x = pideo, y = pqual, group = replication))
+pq <- p + geom_path(aes(group = replication)) +
   facet_grid(constraints ~ from_within)
-
+print(pq)
 
 #################### INDIVIDUAL TRAJECTORIES ####################
 con <- dbConnect(drv,

@@ -19,15 +19,11 @@ import matplotlib.pyplot as plt
 
 ## auxiliary files
 from classdef import Soldier, Army, Ruler
+from helpers import herfindahl
 
 def external_risk(army):
     extval = np.mean([army.pquality[i] for i in army.get_rank(army.top_rank)])
     return 1 - extval        
-
-def herfindahl(value):
-    shares = sum([(float(j)/sum(value))**2 for i,j in enumerate(value)])
-    norm_shares = (shares - 1./len(value))/(1 - 1./len(value))
-    return norm_shares
 
 def above_coup(army):
     total_value = [i[1] for i in army.factions.values()]
@@ -65,13 +61,13 @@ def simulate(army, R, ordered, byunit):
         if it % 50 is 0:
             print "Iteration {}".format(it)
 
-        risk0 = 1/2.*above_coup(army) + 1/2.*external_risk(army)
+        risk0 = 0.0*above_coup(army) + 1.*external_risk(army)
         army.run_promotion(ordered, byunit)
     
         newpars, newdir = adapt(army, risk_var, olddir)
         army["Ruler"].update_parameters(newpars)
         
-        risk1 = 1/2.*above_coup(army) + 1/2.*external_risk(army)
+        risk1 = 0.*above_coup(army) + 1.*external_risk(army)
         risk_var = float(risk1 - risk0)
         oldpars, olddir = newpars, newdir
         
@@ -80,7 +76,7 @@ def simulate(army, R, ordered, byunit):
     return full_sim
 
 # write results into csv
-def simulation_to_csv(simulation, ordered, byunit, filename):
+def simulation_to_csv(simulation, ordered, byunit, filename, replication):
     myfile = csv.writer(open(filename, 'wb'))
 
     R = len(simulation)
@@ -95,7 +91,8 @@ def simulation_to_csv(simulation, ordered, byunit, filename):
             else:
                 ff0, ff1 = None, None
 
-            current_row = [i,
+            current_row = [replication,
+                           i,
                            iteration['age'],
                            iteration['rank'],
                            iteration['seniority'],
@@ -122,6 +119,7 @@ def newtable():
         """
         DROP TABLE IF EXISTS "simp";
         CREATE TABLE "simp" (
+        REPLICATION integer,
         ITERATION integer,
         AGE integer,
         RANK integer,
@@ -146,28 +144,32 @@ def newtable():
 if __name__ == "__main__":
     # newtable()
     baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
-    R = 10000
-    params = (0, 0)
-    leonidas = Ruler(0.5, params)
-    original_sparta = Army(3, 3, 15, leonidas)
-    original_sparta.fill()
-    original_sparta.get_quality()
-    original_sparta.get_factions()
-    for oo in [True, False]:
-        for uu in [True, False]:
-            sparta = deepcopy(original_sparta)
-            print "Method {}, Ordered {}, Internal {}".format(params, oo, uu)
-            simp = simulate(sparta, R, oo, uu)
-            fname = baseloc+'sim_'+str(oo)+'_'+str(uu)+'.txt' 
-            simulation_to_csv(simp, oo, uu, fname)
-            
-            conn = psycopg2.connect("dbname=promotions")
-            cur = conn.cursor()
-            cur.execute('COPY "simp" FROM %s CSV;', [str(fname)])
-            conn.commit()
-            cur.close()
-            conn.close()
+    R = 1000
+    S = 10
+    for s in range(S):
+        params = (0, 0)
+        leonidas = Ruler(0.5, params)
+        original_sparta = Army(3, 3, 15, leonidas)
+        original_sparta.fill()
+        original_sparta.get_quality()
+        original_sparta.get_factions()
 
-qq = [simp[i]["Ruler"].parameters["quality"] for i in range(len(simp))]
-ii = [simp[i]["Ruler"].parameters["ideology"] for i in range(len(simp))]
-plot(qq, ii)
+        print "Replication {}".format(s)
+        for oo in [True, False]:
+            for uu in [True, False]:
+                sparta = deepcopy(original_sparta)
+                print "Method {}, Ordered {}, Internal {}".format(params, oo, uu)
+                simp = simulate(sparta, R, oo, uu)
+                fname = baseloc+'sim_'+str(oo)+'_'+str(uu)+'_'+str(s)+'.txt' 
+                simulation_to_csv(simp, oo, uu, fname, s)
+
+                conn = psycopg2.connect("dbname=promotions")
+                cur = conn.cursor()
+                cur.execute('COPY "simp" FROM %s CSV;', [str(fname)])
+                conn.commit()
+                cur.close()
+                conn.close()
+
+# qq = [simp[i]["Ruler"].parameters["quality"] for i in range(len(simp))]
+# ii = [simp[i]["Ruler"].parameters["ideology"] for i in range(len(simp))]
+# plot(qq, ii)
