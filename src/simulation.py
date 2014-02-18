@@ -112,7 +112,7 @@ def simulation_to_csv(simulation, ordered, byunit, filename, replication):
     print 'File successfully written!'
 
 def newtable():
-    conn = psycopg2.connect(database="promotions")
+    conn = psycopg2.connect(database="promotions", host = "/tmp/.s.PGSQL.5432")
     cur = conn.cursor()
     
     cur.execute(
@@ -144,10 +144,10 @@ def newtable():
 if __name__ == "__main__":
     # newtable()
     baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
-    R = 1000
-    S = 10
-    for s in range(S):
-        params = (0, 0)
+    R = 10000
+    # S = -10
+    for s in range(-10, 10):
+        params = (s, 10)
         leonidas = Ruler(0.5, params)
         original_sparta = Army(3, 3, 15, leonidas)
         original_sparta.fill()
@@ -155,15 +155,14 @@ if __name__ == "__main__":
         original_sparta.get_factions()
 
         print "Replication {}".format(s)
-        for oo in [True, False]:
-            for uu in [True, False]:
+        for oo in [True]:
+            for uu in [True]:
                 sparta = deepcopy(original_sparta)
                 print "Method {}, Ordered {}, Internal {}".format(params, oo, uu)
                 simp = simulate(sparta, R, oo, uu)
                 fname = baseloc+'sim_'+str(oo)+'_'+str(uu)+'_'+str(s)+'.txt' 
                 simulation_to_csv(simp, oo, uu, fname, s)
-
-                conn = psycopg2.connect("dbname=promotions")
+                conn = psycopg2.connect(database="promotions")
                 cur = conn.cursor()
                 cur.execute('COPY "simp" FROM %s CSV;', [str(fname)])
                 conn.commit()
