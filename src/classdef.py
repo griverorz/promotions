@@ -163,7 +163,7 @@ class Army(Soldier):
                return(unit)
 
     def fill_quality(self):
-        return float(np.random.beta(2, 4, 1))
+        return float(np.random.beta(2, 5, 1))
 
     def fill_ideology(self):
         return float(2*np.random.beta(3, 3, 1) - 1)
