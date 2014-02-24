@@ -89,6 +89,7 @@ group by replication, iteration, constraints, ruler_ideology, from_within
 order by iteration;")
 dbDisconnect(con)
 
+## params0 <- params[params$iteration >= 8000, ]
 p <- ggplot(params, aes(x = pideo, y = pqual, group = factor(replication)))
 pq <- p + geom_path(aes(group = replication, colour = factor(replication))) +
     facet_grid(constraints ~ from_within) + 
@@ -111,7 +112,7 @@ dbDisconnect(con)
 
 p <- ggplot(risk, aes(x = iteration, y = risk, group = replication))
 pq <- p +  geom_line(aes(group = replication, colour = replication)) +
-    geom_smooth(formula = y ~ bs(x), method = "lm") +
+    geom_smooth(formula = y ~ x, method = "lm") +
     scale_y_continuous(limits = c(0, 1)) +
     facet_grid(constraints ~ from_within)
 print(pq)

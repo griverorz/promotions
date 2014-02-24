@@ -221,12 +221,14 @@ class Army(Soldier):
 
         params = self["Ruler"].parameters
 
-        qq = [params["quality"]*self.data[i].quality for i in listpool]
+        qq = [self.data[i].quality for i in listpool]
+        qq = map(lambda x: x/max(qq), qq)
         # ss = [params["seniority"]*self.data[i].seniority for i in listpool]
-        ii = [params["ideology"]*abs(self.data[i].ideology - s_ideo)
-              for i in listpool]
+        ii = [abs(self.data[i].ideology - s_ideo) for i in listpool]
+        ii = map(lambda x: x/max(ii), ii)
 
-        score = [qq[i] - ii[i] for i in range(len(listpool))]
+        score = [params["quality"]*qq[i] - params["ideology"]*ii[i] 
+                 for i in range(len(listpool))]
         all_idx = all_indices(max(score), score)
         ## random choice only has grip when all_idx > 0
         ## and that only happens when there are ties

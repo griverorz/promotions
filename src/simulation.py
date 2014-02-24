@@ -57,7 +57,7 @@ def simulate(army, R, ordered, byunit):
     olddir = np.random.uniform(-1, 1, len(army["Ruler"].parameters))
 
     while it < R:
-        if it % 100 is 0:
+        if it % 500 is 0:
             print "Iteration {}".format(it)
 
         risk0 = army.risk()
@@ -149,10 +149,8 @@ def newtable():
 if __name__ == "__main__":
     # newtable()
     baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
-    R = 5000
+    R = 3000
     # S = -10
-    # for s in [0, 2, 5, 7, 10]:
-    #     for r in [0, 2, 5, 7, 10]:
     for s in [0, 10]:
         for r in [0, 10]:
             params = [r, s]
@@ -167,11 +165,11 @@ if __name__ == "__main__":
             for oo in [True, False]:
                 for uu in [True, False]:
                     sparta = deepcopy(original_sparta)
-                    print "Method {}, Ordered {}, Internal {}".format(params, oo, uu)
+                    print "Inits: {}, Ordered: {}, Internal: {}".format(params, oo, uu)
                     simp = simulate(sparta, R, oo, uu)
                     fname = baseloc+'sim_'+str(oo)+'_'+str(uu)+'_'+str(s)+'.txt'
                     simulation_to_csv(simp, oo, uu, fname, str(r)+str(s))
-                    conn = psycopg2.connect(database="promotions", host = "/tmp/")
+                    conn = psycopg2.connect(database="promotions")
                     cur = conn.cursor()
                     cur.execute('COPY "simp" FROM %s CSV;', [str(fname)])
                     conn.commit()
