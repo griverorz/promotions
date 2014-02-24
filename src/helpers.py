@@ -105,8 +105,16 @@ def all_indices(value, qlist):
         except ValueError:
             break
     return indices
-
+    
 def herfindahl(value):
     shares = sum([(float(j)/sum(value))**2 for i,j in enumerate(value)])
     norm_shares = (shares - 1./len(value))/(1 - 1./len(value))
     return norm_shares
+
+def truncate(x, min_x, max_x):
+    if x >= max_x:
+        x = max_x
+    elif x <= min_x:
+        x = min_x
+    return x
+        

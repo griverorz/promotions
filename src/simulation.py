@@ -14,21 +14,20 @@ import csv
 import math
 import psycopg2
 from copy import deepcopy
-import igraph 
+import igraph
 import matplotlib.pyplot as plt
 
 ## auxiliary files
 from classdef import Soldier, Army, Ruler
-from helpers import herfindahl
 
 def external_risk(army):
     extval = np.mean([army.pquality[i] for i in army.get_rank(army.top_rank)])
-    return 1 - extval        
+    return 1 - extval
 
 def above_coup(army):
     total_value = [i[1] for i in army.factions.values()]
     return herfindahl(total_value)
-    
+
 # def below_coup()
 
 def adapt(army, varrisk, olddir):
@@ -56,21 +55,21 @@ def simulate(army, R, ordered, byunit):
 
     risk_var = -1
     olddir = np.random.uniform(-1, 1, len(army["Ruler"].parameters))
-    
+
     while it < R:
-        if it % 50 is 0:
+        if it % 100 is 0:
             print "Iteration {}".format(it)
 
-        risk0 = 0.0*above_coup(army) + 1.*external_risk(army)
+        risk0 = army.risk()
+
         army.run_promotion(ordered, byunit)
-    
         newpars, newdir = adapt(army, risk_var, olddir)
         army["Ruler"].update_parameters(newpars)
-        
-        risk1 = 0.*above_coup(army) + 1.*external_risk(army)
+
+        risk1 = army.risk()
         risk_var = float(risk1 - risk0)
         oldpars, olddir = newpars, newdir
-        
+
         full_sim[it] = deepcopy(army)
         it += 1
     return full_sim
@@ -82,6 +81,7 @@ def simulation_to_csv(simulation, ordered, byunit, filename, replication):
     R = len(simulation)
 
     for i in range(1, R):
+        risk = simulation[i].risk()
         for j in simulation[i].units:
             iteration = simulation[i].data[j].report()
             ff = dict.fromkeys(simulation[i].get_rank(simulation[i].top_rank))
@@ -104,7 +104,9 @@ def simulation_to_csv(simulation, ordered, byunit, filename, replication):
                            ff1,
                            simulation[i]["Ruler"].parameters["ideology"],
                            simulation[i]["Ruler"].parameters["quality"],
-                           # simulation[i]["Ruler"].parameters["seniority"],
+                           simulation[i]["Ruler"].utility["internal"],
+                           simulation[i]["Ruler"].utility["external"],
+                           risk,
                            ordered,
                            byunit,
                            simulation[i]["Ruler"].ideology]
@@ -114,12 +116,12 @@ def simulation_to_csv(simulation, ordered, byunit, filename, replication):
 def newtable():
     conn = psycopg2.connect(database="promotions", host = "/tmp/.s.PGSQL.5432")
     cur = conn.cursor()
-    
+
     cur.execute(
         """
         DROP TABLE IF EXISTS "simp";
         CREATE TABLE "simp" (
-        REPLICATION integer,
+        REPLICATION varchar,
         ITERATION integer,
         AGE integer,
         RANK integer,
@@ -132,6 +134,9 @@ def newtable():
         FORCE_FACTION double precision,
         PARAMS_IDEO double precision,
         PARAMS_QUAL double precision,
+        UTILITY_INT double precision,
+        UTILITY_EXT double precision,
+        RISK double precision,
         CONSTRAINTS varchar,
         FROM_WITHIN varchar,
         RULER_IDEOLOGY double precision);
@@ -144,31 +149,37 @@ def newtable():
 if __name__ == "__main__":
     # newtable()
     baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
-    R = 10000
+    R = 5000
     # S = -10
-    for s in range(-10, 10):
-        params = (s, 10)
-        leonidas = Ruler(0.5, params)
-        original_sparta = Army(3, 3, 15, leonidas)
-        original_sparta.fill()
-        original_sparta.get_quality()
-        original_sparta.get_factions()
+    # for s in [0, 2, 5, 7, 10]:
+    #     for r in [0, 2, 5, 7, 10]:
+    for s in [0, 10]:
+        for r in [0, 10]:
+            params = [r, s]
+            utility = [0.0, 1.0]
+            leonidas = Ruler(0.75, params, utility)
+            original_sparta = Army(3, 3, 15, leonidas)
+            original_sparta.fill()
+            original_sparta.get_quality()
+            original_sparta.get_factions()
 
-        print "Replication {}".format(s)
-        for oo in [True]:
-            for uu in [True]:
-                sparta = deepcopy(original_sparta)
-                print "Method {}, Ordered {}, Internal {}".format(params, oo, uu)
-                simp = simulate(sparta, R, oo, uu)
-                fname = baseloc+'sim_'+str(oo)+'_'+str(uu)+'_'+str(s)+'.txt' 
-                simulation_to_csv(simp, oo, uu, fname, s)
-                conn = psycopg2.connect(database="promotions")
-                cur = conn.cursor()
-                cur.execute('COPY "simp" FROM %s CSV;', [str(fname)])
-                conn.commit()
-                cur.close()
-                conn.close()
+            print "Replication {}-{}".format(r, s)
+            for oo in [True, False]:
+                for uu in [True, False]:
+                    sparta = deepcopy(original_sparta)
+                    print "Method {}, Ordered {}, Internal {}".format(params, oo, uu)
+                    simp = simulate(sparta, R, oo, uu)
+                    fname = baseloc+'sim_'+str(oo)+'_'+str(uu)+'_'+str(s)+'.txt'
+                    simulation_to_csv(simp, oo, uu, fname, str(r)+str(s))
+                    conn = psycopg2.connect(database="promotions", host = "/tmp/")
+                    cur = conn.cursor()
+                    cur.execute('COPY "simp" FROM %s CSV;', [str(fname)])
+                    conn.commit()
+                    cur.close()
+                    conn.close()
 
 # qq = [simp[i]["Ruler"].parameters["quality"] for i in range(len(simp))]
 # ii = [simp[i]["Ruler"].parameters["ideology"] for i in range(len(simp))]
 # plot(qq, ii)
+# show()
+

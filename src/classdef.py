@@ -31,14 +31,14 @@ class Soldier(object):
 
     def __str__(self):
         chars = 'Rank: {}, \nSeniority: {}, \nAge: {}, \nQuality: {}, \nIdeology: {}, \nAlive: {}'.format(
-            self.rank, 
+            self.rank,
             self.seniority,
-            self.age, 
+            self.age,
             self.quality,
             self.ideology,
             self.alive)
         return chars
-        
+
     def report(self):
         return({'id': self.id,
                 'rank': self.rank,
@@ -65,7 +65,7 @@ class Soldier(object):
         else:
             return(False)
 
-    def is_candidate(self, openrank, openunit, topage, ordered, 
+    def is_candidate(self, openrank, openunit, topage, ordered,
                      byunit = False, slack = 1):
 
         def _possible_superiors(code):
@@ -86,7 +86,7 @@ class Soldier(object):
                 if self.rank < openrank and condalive:
                     isc = True
             elif ordered is True:
-                if self.rank == (openrank - slack) and condalive: 
+                if self.rank == (openrank - slack) and condalive:
                     isc = True
             return isc
 
@@ -99,23 +99,26 @@ class Soldier(object):
 
 class Ruler(object):
     """ The ruler """
-    def __init__(self, ideology, params):
+    def __init__(self, ideology, params, utility):
+        params = map(lambda x: truncate(x, 0, 10), params)
         self.ideology = ideology
-        self.parameters = {"ideology": params[0], 
+        self.parameters = {"ideology": params[0],
                            "quality": params[1]}
-                           # "seniority": params[2}
-        
+        self.utility = {"internal": utility[0],
+                        "external": utility[1]}
+
     def __str__(self):
         chars = "Ideology: {}, \nParameters: {}".format(
-            self.ideology, 
+            self.ideology,
             self.parameters.values())
         return chars
 
     def update_parameters(self, newparams):
-        self.parameters = {"ideology": newparams[0], 
+        newparams = map(lambda x: truncate(x, 0, 10), newparams)
+        self.parameters = {"ideology": newparams[0],
                            "quality": newparams[1]}
                            # "seniority": newparams[2]}
-        
+
 class Army(Soldier):
     """ An ordered collection of soldiers """
     def __init__(self, unit_size, top_rank, top_age, ruler):
@@ -128,6 +131,7 @@ class Army(Soldier):
         self.uquality = dict.fromkeys(self.units)
         self.pquality = dict.fromkeys(self.units)
         self.factions = dict.fromkeys(self.get_rank(self.top_rank))
+        self.urisk = 0
 
     def fill(self):
         for unit in self.units:
@@ -142,14 +146,14 @@ class Army(Soldier):
 
     def __str__(self):
         chars = "Soldiers: {}, \nUnit size: {}, \nTop rank: {}".format(
-            len(self.units), 
-            self.unit_size, 
+            len(self.units),
+            self.unit_size,
             self.top_rank)
         return chars
 
     def __getitem__(self, key):
         return self.data[key]
-        
+
     def unit_to_rank(self, unit):
         return self.top_rank - len(str(unit)) + 1
 
@@ -163,17 +167,17 @@ class Army(Soldier):
                return(unit)
 
     def fill_quality(self):
-        return float(np.random.beta(2, 5, 1))
+        return float(np.random.beta(2, 4, 1))
 
     def fill_ideology(self):
-        return float(2*np.random.beta(3, 3, 1) - 1)
+        return 2*float(np.random.beta(3, 3, 1)) - 1
 
     def find_subordinates(self, unit):
         subs_list = [unit]
         if len(str(unit)) >= self.top_rank:
             return subs_list
         else:
-            children = [int(str(unit) + str((i % self.unit_size) + 1)) 
+            children = [int(str(unit) + str((i % self.unit_size) + 1))
                         for i in range(self.unit_size)]
             for i in children:
                 subs = self.find_subordinates(i)
@@ -191,19 +195,19 @@ class Army(Soldier):
             return 'Ruler'
         else:
             return unit/10
-    
+
     def up_for_retirement(self):
         retirees = []
         for i in self.units:
             if self.data[i].will_retire(self.top_age) and self.unit_to_rank(i) is not 1:
                 retirees.append(i)
         return retirees
-    
+
     def up_for_promotion(self, openpos, ordered, byunit, slack):
         pool =[]
         openrank = self.unit_to_rank(openpos)
         for i in self.units:
-            if self[i] and self[i].is_candidate(openrank, openpos, self.top_age, 
+            if self[i] and self[i].is_candidate(openrank, openpos, self.top_age,
                                                 ordered, byunit, slack):
                 pool.append(i)
         return pool
@@ -219,8 +223,8 @@ class Army(Soldier):
 
         qq = [params["quality"]*self.data[i].quality for i in listpool]
         # ss = [params["seniority"]*self.data[i].seniority for i in listpool]
-        ii = [params["ideology"]*abs(self.data[i].ideology - s_ideo) 
-              for i in listpool]        
+        ii = [params["ideology"]*abs(self.data[i].ideology - s_ideo)
+              for i in listpool]
 
         score = [qq[i] - ii[i] for i in range(len(listpool))]
         all_idx = all_indices(max(score), score)
@@ -235,12 +239,12 @@ class Army(Soldier):
         unavail = []
         openpos = filter(lambda x: self.unit_to_rank(x) is not 1, openpos)
         openpos = sorted(openpos, key = lambda x: self.unit_to_rank(x),
-                         reverse = True)                
-        
+                         reverse = True)
+
         while openpos:
             toreplace = openpos[0]
             # print "Replacing {}...".format(toreplace)
-            slack = 1            
+            slack = 1
             pool = self.up_for_promotion(toreplace, ordered, byunit, 1)
 
             while not pool and (self.unit_to_rank(toreplace) - slack) > 1:
@@ -249,7 +253,7 @@ class Army(Soldier):
                 print "Looking one level deeper"
 
             pool = list(set(pool).difference(set(unavail)))
-            
+
             if not pool:
                 print "\tCreating {}'s holder".format(toreplace)
                 rr = self.unit_to_rank(toreplace)
@@ -257,7 +261,7 @@ class Army(Soldier):
                 ss = 0
                 qq = self.fill_quality()
                 ii = self.fill_ideology()
-                self.data[toreplace] = Soldier(rr, ss, aa, qq, ii, toreplace)        
+                self.data[toreplace] = Soldier(rr, ss, aa, qq, ii, toreplace)
 
                 openpos.pop(0)
                 unavail.append(toreplace)
@@ -273,16 +277,16 @@ class Army(Soldier):
                 self.data[idx] = None
                 unavail.append(self.data[idx])
                 openpos.pop(0)
-        
+
                 if self.unit_to_rank(idx) > 1:
                     openpos = [idx] + openpos
                     openpos = sorted(openpos, key = lambda x: self.unit_to_rank(idx),
-                                     reverse = True)                
+                                     reverse = True)
 
     def network(self):
         def _make_link(i, j):
-            diff = np.exp(-abs(i.ideology - j.ideology))
-            return np.random.binomial(1, 1 - diff)
+            diff = np.exp(-3.*(abs(i - j)))
+            return np.random.binomial(1, diff)
         tr = self.unit_size
         nw = np.zeros((tr, tr), int)
         gg = self.get_rank(self.top_rank)
@@ -291,7 +295,7 @@ class Army(Soldier):
                 if i is j:
                     nw[i, j] = 0
                 else:
-                    if _make_link(self[gg[i]], self[gg[j]]) is 1:
+                    if _make_link(self[gg[i]].ideology, self[gg[j]].ideology) is 1:
                         nw[i, j], nw[j, i] = 1, 1
                     else:
                         nw[i, j], nw[j, i] = 0, 0
@@ -306,8 +310,8 @@ class Army(Soldier):
 
     def recruit_soldiers(self):
         dead_soldiers = []
-        dead_soldiers = filter(lambda x: 
-                               (self.data[x] is None) or (self.data[x].alive is False), 
+        dead_soldiers = filter(lambda x:
+                               (self.data[x] is None) or (self.data[x].alive is False),
                                self.get_rank(1))
 
         for mia in dead_soldiers:
@@ -317,8 +321,8 @@ class Army(Soldier):
             ss = 1
             qq = self.fill_quality()
             ii = self.fill_ideology()
-            self.data[mia] = Soldier(1, ss, aa, qq, ii, mia)  
-            
+            self.data[mia] = Soldier(1, ss, aa, qq, ii, mia)
+
     def test(self):
         ftest = True
         # No empty position
@@ -326,7 +330,7 @@ class Army(Soldier):
                                "rconsistent", "uconsistent", "nodupes"])
         tests["novacancies"] = any(i is not None for i in self.data.values())
         # Position in agreement with rank
-        tests["rconsistent"] = all([self.data[i].rank is self.unit_to_rank(i) 
+        tests["rconsistent"] = all([self.data[i].rank is self.unit_to_rank(i)
                                for i in self.units])
         tests["allalive"] = all([self.data[i].alive for i in self.units])
         # Units in agreement
@@ -348,7 +352,7 @@ class Army(Soldier):
             self.uquality[i] = subterm * _iq(i)
             maxquality = subterm * _iq(i)/self.data[i].quality
             self.pquality[i] = self.uquality[i]/maxquality
-        
+
     def get_factions(self):
         nn = self.network()
         nc = nn.clusters()
@@ -360,6 +364,22 @@ class Army(Soldier):
         for i in tmp_factions.keys():
             for j in tmp_factions[i][0]:
                 self.factions[j] = (i, tmp_factions[i][1])
+
+
+    def external_risk(self):
+        extval = np.mean([self.pquality[i] for i in self.get_rank(self.top_rank)])
+        return 1.0 - extval
+
+    def above_coup(self):
+        factions = {k: 0 for k in range(self.top_rank)}
+        for i, j in self.factions.values():
+            factions[i] += j
+        return herfindahl(factions.values())
+
+    def risk(self):
+        uu = self["Ruler"].utility
+        urisk = uu["internal"]*self.above_coup() + uu["external"]*self.external_risk()
+        return urisk
 
     def run_promotion(self, ordered, byunit):
         openpos = self.up_for_retirement()
