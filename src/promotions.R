@@ -112,7 +112,7 @@ dbDisconnect(con)
 
 p <- ggplot(risk, aes(x = iteration, y = risk, group = replication))
 pq <- p +  geom_line(aes(group = replication, colour = replication)) +
-    geom_smooth(formula = y ~ x, method = "lm") +
+    geom_smooth(formula = y ~ bs(x), method = "lm") +
     scale_y_continuous(limits = c(0, 1)) +
     facet_grid(constraints ~ from_within)
 print(pq)

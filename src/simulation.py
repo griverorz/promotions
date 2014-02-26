@@ -30,6 +30,13 @@ def above_coup(army):
 
 # def below_coup()
 
+def wdirection(vector):
+    weights = 1/np.exp(range(len(vector)))
+    def _wv(ww, vv):
+        return [ww*vv[j] for j in range(len(vv))]
+    x = [_wv(weights[i], vector[i]) for i in range(len(vector))]
+    return list(sum(np.array(x)))
+
 def adapt(army, varrisk, olddir):
     '''
     ruler self-explanatory
@@ -37,14 +44,15 @@ def adapt(army, varrisk, olddir):
     d0 is the initial direction
     '''
     pp = army["Ruler"].parameters.values()
-    step = abs(varrisk)
+    step = abs(varrisk[0])
     # creates random movement
     rdir = np.random.uniform(-1, 1, len(pp))
     rdir = map(lambda x: x*step, rdir/np.linalg.norm(rdir))
+    wdir = wdirection(olddir)
     if varrisk <= 0:
-        rdir = olddir
+        rdir = wdir
     else:
-        rdir = [abs(rdir[i])*-1*np.sign(olddir[i]) for i in range(len(pp))]
+        rdir = [abs(rdir[i])*-1*np.sign(wdir[i]) for i in range(len(pp))]
     nvector = [pp[i] + rdir[i] for i in range(len(pp))]
     return nvector, rdir
 
@@ -53,8 +61,8 @@ def simulate(army, R, ordered, byunit):
     full_sim[0] = deepcopy(army)
     it = 1
 
-    risk_var = -1
-    olddir = np.random.uniform(-1, 1, len(army["Ruler"].parameters))
+    full_risk_var = [-1]
+    full_olddir = [np.random.uniform(-1, 1, len(army["Ruler"].parameters))]
 
     while it < R:
         if it % 500 is 0:
@@ -63,12 +71,16 @@ def simulate(army, R, ordered, byunit):
         risk0 = army.risk()
 
         army.run_promotion(ordered, byunit)
-        newpars, newdir = adapt(army, risk_var, olddir)
+        newpars, newdir = adapt(army, full_risk_var, full_olddir)
         army["Ruler"].update_parameters(newpars)
 
         risk1 = army.risk()
         risk_var = float(risk1 - risk0)
+
         oldpars, olddir = newpars, newdir
+        ## Append to history
+        full_risk_var.append(risk_var)
+        full_olddir.append(olddir)
 
         full_sim[it] = deepcopy(army)
         it += 1
