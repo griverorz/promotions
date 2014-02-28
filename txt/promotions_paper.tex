@@ -1,0 +1,175 @@
+\documentclass[11pt]{article}
+% \linespread{1.1}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[pdftex]{graphicx}
+\usepackage[utf8]{inputenc} 
+\usepackage{amssymb} 
+% \usepackage{mla}
+\usepackage{amsmath} 
+\usepackage{tikz}
+\usepackage{bbding}
+\usepackage{booktabs,caption,fixltx2e}
+\usepackage[flushleft]{threeparttable}
+\usepackage{array}
+\usepackage{amsfonts} 
+\usepackage{listings} 
+\usepackage{bm}
+\usepackage{pdflscape}
+\usepackage{setspace} 
+\usepackage{rotating}
+\usepackage{pifont}
+\usepackage{multirow}
+\usepackage{enumerate}
+\usepackage{makeidx} 
+\usepackage{alltt} 
+\usepackage{fancyvrb} 
+\usepackage{soul}
+\usepackage{scalefnt} 
+\usepackage{calc} 
+\usepackage[toc,page]{appendix}
+\usepackage{hyperref} 
+\usepackage{natbib} 
+\usepackage{fancyhdr} 
+\usepackage{pdfpages}
+\usepackage{framed}
+\usepackage{mdwlist}
+\usepackage{geometry}
+% \geometry{left = 2.5cm, right = 2.5cm, top = 2.5cm, bottom = 3cm}
+\usepackage[T1]{fontenc}
+% \usepackage[osf]{mathpazo}
+\usepackage{titlesec}
+
+\renewcommand*{\figureautorefname}{figure}
+\renewcommand*{\figureautorefname}{table}
+
+\tikzstyle{mybox} = [very thick, rectangle, inner sep = 10pt]
+\usetikzlibrary{arrows,positioning,automata} 
+
+\newcommand{\bb}[1]{\multicolumn{6}{c}{#1}}
+\newcommand{\mix}{\multicolumn{2}{r}{}}
+\newcommand{\vect}[1]{\boldsymbol{#1}}
+\newcommand{\degree}{\ensuremath{^\circ}}
+\newcommand{\E}{\ensuremath{\mathbb{E}}}
+
+% Technical environments
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Result}
+\newtheorem{assumption}{Assumption}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\newenvironment{proof}[1][Proof]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+\newenvironment{definition}[1][Definition]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+\newenvironment{example}[1][Example]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+\newenvironment{remark}[1][Remark]{\begin{trivlist}
+\item[\hskip \labelsep {\bfseries #1}]}{\end{trivlist}}
+
+\newcommand{\qed}{\nobreak \ifvmode \relax \else
+      \ifdim\lastskip<1.5em \hskip-\lastskip
+      \hskip1.5em plus0em minus0.5em \fi \nobreak
+      \vrule height0.75em width0.5em depth0.25em\fi}
+
+% New operator
+\DeclareMathOperator{\supp}{supp}
+
+% Spaces in bibliography
+\let\oldthebibliography=\thebibliography
+\let\endoldthebibliography=\endthebibliography
+\renewenvironment{thebibliography}[1]{%
+  \begin{oldthebibliography}{#1}%
+    \setlength{\parskip}{0ex}%
+    \setlength{\itemsep}{0.1ex}%
+  }%
+  {%
+  \end{oldthebibliography}%
+}
+
+\clubpenalty=10000  
+\widowpenalty=10000
+
+\renewcommand{\tablename}{\bf Table}
+\renewcommand{\thetable}{\Roman{table}}
+\renewcommand{\figurename}{\bf Figure}
+
+\definecolor{lightred}{rgb}{0.7,0,0}
+\definecolor{darkgreen}{rgb}{0,0.8,0}
+\definecolor{lightblue}{rgb}{0,0,0.7}
+
+\makeatletter
+% \renewcommand\@seccntformat[1]{\csname \the#1. \endcsname}
+
+% \sectionfont{verdana}
+\renewcommand\section{\@startsection {section}{1}{\z@}%
+  {-3.5ex \@plus -1ex \@minus -.2ex}%
+  {2.3ex \@plus.2ex}%
+  {\color{lightblue}\centering\Large\itshape}}
+
+\renewcommand\subsection{\@startsection {subsection}{2}%
+  {0mm}%
+  {-\baselineskip}%
+  {0.5\baselineskip}%
+  {\color{lightblue}\centering\large\itshape}}
+\makeatother
+
+% \newcommand{\ssection}[1]{\section[#1]{\centering #1}}
+
+\hypersetup{colorlinks,
+  linkcolor = lightred,
+  filecolor = lightred,
+  urlcolor = lightblue,
+  citecolor = lightred}
+
+\providecommand{\abs}[1]{\lvert#1\rvert}
+\providecommand{\norm}[1]{\lVert#1\rVert}
+\providecommand{\up}[1]{\overline{#1}}
+\providecommand{\lo}[1]{\underline{#1}}
+
+% Dutch style of paragraph formatting
+\parskip 5pt
+
+% Separation between lines
+\doublerulesep 1pt
+
+\begin{document}
+
+\title{Internal dynamics}
+
+\author{\href{mailto:gonzalo.rivero@nyu.edu}{Gonzalo Rivero}\footnote{Contact:
+    \href{mailto:gonzalo.rivero@nyu.edu}{gonzalo.rivero@nyu.edu}.} \\ New York University
+}
+
+\date{\today \\ \vspace*{2cm}  WORK IN PROGRESS --- COMMENTS ARE WELCOME.}
+
+\maketitle
+
+
+\begin{abstract}
+TBW
+\end{abstract}
+
+\newpage
+
+\input{introduction.tex}
+% \input{theory.tex}
+% \input{simulation.tex}
+% \input{conclusions.tex}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newpage
+
+% \bibliographystyle{chicagoa}
+% \bibliography{/Users/gonzalorivero/Documents/bib/ccss}
+
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 
+
+
+

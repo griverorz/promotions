@@ -1,0 +1,125 @@
+\section{Simulation}
+\label{sec:simulation}
+
+Army composed of $N$ soldiers, grouped in $G$ units, and divided in $K$ ranks.
+
+A soldier is characterized by three exogenous attributes, namely an ideological position, a quality, and age, and an
+endogenously determined rank.
+
+More formaly, a soldier $i$ is characterized by a vector $(\theta_i, \mu_i)$, where $\theta_i \sim U(0,1)$, $\mu_i \sim U(-1,1)$, $a_i
+\in \{1, \dots ,K\}$, $r_i \in \{1, \dots, K\}$
+
+The simulation analyzes the behavior of three promotion rules, with two different variations. 
+
+Let $j$ be a vacant at rank $r$, and let $I = \{i \in I | r_i < r_j \text{ and } a_i < \overline{a}\}$ be the set of
+vacants. Promotion at random picks 
+\begin{eqnarray*}
+ \Pr(i \in I) = \Pr(j \in I), i \neq j
+\end{eqnarray*}
+
+Promotion of the ablest picks 
+\begin{eqnarray*}
+  \arg\max_{i \in I} \mu_i
+\end{eqnarray*}
+
+while promotion of the closests picks
+\begin{eqnarray*}
+  \arg\min_{i \in I} \abs{\theta_i - \hat \theta}
+\end{eqnarray*}
+
+I have also explored the behavior of restrictions $I = \{i \in I | r_i = r_j - 1 \text{ and } a_i <
+\overline{a}\}$. This set reduces the possible promotions to those individuals in the rank inmediately below the
+available position.
+
+Define $c_i^j = \{0, 1\}$ to be such that $i$ has command over $j$. Then, for an individual $i$ of rank $r$ define the
+set $C_i = \{j \in N | r_j = r_i - 1 \text{ and } c_i^j = 1\}$. Recursively, it defines for an individual $i$ the set of
+soldiers over whom he has direct or indirect command.
+
+In the simulations that follow I have used the following parameters: 
+
+\begin{table}[!h]
+  \centering
+  \caption{Parameters used in the simulation}
+  \begin{tabular}{ll}
+    \hline
+    N & 1024 \\
+    Ranks & 4 \\ 
+    U & 4 \\
+    Age & 10 \\
+    \hline
+  \end{tabular}
+  \label{tab:parameters}
+\end{table}
+Python script. Code available at the following \href{https://griverorz@bitbucket.org/griverorz/promotions}{Mercurial repository}
+
+\section{Results}
+\label{sec:results}
+
+Figure \ref{fig:ideology} shows the evolution of the mean of the ideological position of the military divided by rank
+and promotion system. Not surprisingly, promoting those that are closer to the ruler makes the highest ranks very
+homogeneous. In fact, ranks are closer to the ruler the higher their position in the hierarchy is, even although this
+configuration is achieved by actually moving the lower ranks \emph{further apart}. The rest of the promotion rules
+maintain an ideologically neutral army, at least if we define it from a similar ideological distribution across
+ranks. In particular, and as we would expect, each rank looks like composed by random extractions of ideology.
+
+Pomotion with seniority shows a lower oscillation.
+
+\begin{figure}[!h]
+  \centering
+  \caption{Evolution of ideology}
+  \includegraphics[width = 14cm]{figures/ideology.pdf}
+  \label{fig:ideology}
+\end{figure}
+
+The natural question to ask for a promotion system is how it affects the overall quality of the organization with
+respect to the task it is supposed to perform. From a very intuitive perspective, the criterion for order in the efficiency two
+different armies is by comparing their resulting sorting. In a highly hierarchized
+institution like a military in which the degree of substituibility of a given element decreases with the rank ---the
+tasks they perform are more specialized and entail more responsibility---, it is natural to require the individuals with
+the highest quality are concentrated in the highest positions. I have then calculated the total efficiency of the
+institution as the weighted sum of the individual quality, where weights are given by the rank of the
+individual. For simplicity, I have normalized this value with respect to the maximum achievable efficiency, as given by
+a military in which all individuals are endowed with the highest possible value of quality --- figure \ref{fig:efficiency}.
+
+\begin{figure}[!h]
+  \centering
+  \caption{Evolution of efficiency}
+  \includegraphics[width = 14cm]{figures/efficiency.pdf}
+  \label{fig:efficiency}
+\end{figure}
+
+In terms of risk, not individuals should carry the same weight. If we assume that some degree of vertical obedience will
+exist, it is then fit to assume that rebellions by highest ranks will entail higher risk for the ruler than threats from
+lower ranks. I have captured this idea in the simulated armies by looking at the utility of each individual weighted by
+the amount of soldier-quality in can mobilized. Figure \ref{fig:wutility} shows the utility level as an approximation of
+risk weighted by the total quality that each individual can, directly or indirectly, mobilize against the ruler.
+
+% % \begin{sideways}
+%   \begin{figure}[!h]
+%     \centering
+%     \caption{Weighted utility}
+%     \includegraphics[width = 14cm]{figures/weighted_utility.png}
+%     \label{fig:wutility}
+%   \end{figure}
+% % \end{sideways}
+
+  % \begin{figure}[!h]
+  %   \centering
+  %   \caption{Evolution of utility}
+  %   \includegraphics[width = 14cm]{figures/utility.pdf}
+  %   \label{fig:utility}
+  % \end{figure}
+
+% The individual trajectory of an individual is shown in figure \ref{fig:evolution}.
+
+  \begin{figure}[!h]
+    \centering
+    \caption{Evolution of individual risk}
+    \includegraphics[width = 14cm]{figures/capacity.pdf}
+    \label{fig:evolution}
+  \end{figure}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "promotions_paper"
+%%% End: 
