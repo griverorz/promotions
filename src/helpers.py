@@ -118,3 +118,9 @@ def truncate(x, min_x, max_x):
         x = min_x
     return x
         
+def wdirection(vector):
+    weights = 1/np.exp(range(len(vector)))
+    def _wv(ww, vv):
+        return [ww*vv[j] for j in range(len(vv))]
+    x = [_wv(weights[i], vector[i]) for i in range(len(vector))]
+    return list(sum(np.array(x)))

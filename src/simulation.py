@@ -30,32 +30,6 @@ def above_coup(army):
 
 # def below_coup()
 
-def wdirection(vector):
-    weights = 1/np.exp(range(len(vector)))
-    def _wv(ww, vv):
-        return [ww*vv[j] for j in range(len(vv))]
-    x = [_wv(weights[i], vector[i]) for i in range(len(vector))]
-    return list(sum(np.array(x)))
-
-def adapt(army, varrisk, olddir):
-    '''
-    ruler self-explanatory
-    drisk is a measure of risk differential associated with the current army
-    d0 is the initial direction
-    '''
-    pp = army["Ruler"].parameters.values()
-    step = abs(varrisk[0])
-    # creates random movement
-    rdir = np.random.uniform(-1, 1, len(pp))
-    rdir = map(lambda x: x*step, rdir/np.linalg.norm(rdir))
-    wdir = wdirection(olddir)
-    if varrisk <= 0:
-        rdir = wdir
-    else:
-        rdir = [abs(rdir[i])*-1*np.sign(wdir[i]) for i in range(len(pp))]
-    nvector = [pp[i] + rdir[i] for i in range(len(pp))]
-    return nvector, rdir
-
 def simulate(army, R, ordered, byunit):
     full_sim = dict.fromkeys(range(R))
     full_sim[0] = deepcopy(army)
@@ -71,13 +45,12 @@ def simulate(army, R, ordered, byunit):
         risk0 = army.risk()
 
         army.run_promotion(ordered, byunit)
-        newpars, newdir = adapt(army, full_risk_var, full_olddir)
-        army["Ruler"].update_parameters(newpars)
+        newdir = army["Ruler"].adapt(full_risk_var, full_olddir)
 
         risk1 = army.risk()
         risk_var = float(risk1 - risk0)
+        olddir = newdir
 
-        oldpars, olddir = newpars, newdir
         ## Append to history
         full_risk_var.append(risk_var)
         full_olddir.append(olddir)
@@ -116,6 +89,7 @@ def simulation_to_csv(simulation, ordered, byunit, filename, replication):
                            ff1,
                            simulation[i]["Ruler"].parameters["ideology"],
                            simulation[i]["Ruler"].parameters["quality"],
+                           simulation[i]["Ruler"].parameters["seniority"],
                            simulation[i]["Ruler"].utility["internal"],
                            simulation[i]["Ruler"].utility["external"],
                            risk,
@@ -146,6 +120,7 @@ def newtable():
         FORCE_FACTION double precision,
         PARAMS_IDEO double precision,
         PARAMS_QUAL double precision,
+        PARAMS_SEN double precision,
         UTILITY_INT double precision,
         UTILITY_EXT double precision,
         RISK double precision,
@@ -161,12 +136,12 @@ def newtable():
 if __name__ == "__main__":
     # newtable()
     baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
-    R = 3000
+    R = 1000
     # S = -10
     for s in [0, 10]:
         for r in [0, 10]:
-            params = [r, s]
-            utility = [0.0, 1.0]
+            params = {'ideology': r, 'quality': s, 'seniority': 1}
+            utility = {'internal': 0.0, 'external': 0.0}
             leonidas = Ruler(0.75, params, utility)
             original_sparta = Army(3, 3, 15, leonidas)
             original_sparta.fill()

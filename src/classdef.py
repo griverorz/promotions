@@ -100,12 +100,11 @@ class Soldier(object):
 class Ruler(object):
     """ The ruler """
     def __init__(self, ideology, params, utility):
-        params = map(lambda x: truncate(x, 0, 10), params)
+        for k in params.keys():
+            params[k] = truncate(params[k], 0, 10)
         self.ideology = ideology
-        self.parameters = {"ideology": params[0],
-                           "quality": params[1]}
-        self.utility = {"internal": utility[0],
-                        "external": utility[1]}
+        self.parameters = params
+        self.utility = utility
 
     def __str__(self):
         chars = "Ideology: {}, \nParameters: {}".format(
@@ -114,10 +113,36 @@ class Ruler(object):
         return chars
 
     def update_parameters(self, newparams):
-        newparams = map(lambda x: truncate(x, 0, 10), newparams)
-        self.parameters = {"ideology": newparams[0],
-                           "quality": newparams[1]}
-                           # "seniority": newparams[2]}
+        for k in newparams.keys():
+            newparams[k] = truncate(newparams[k], 0, 10)
+        self.parameters = newparams
+
+    def adapt(self, varrisk, olddir, fix = ("seniority")):
+        '''
+        ruler self-explanatory
+        drisk is a measure of risk differential associated with the current army
+        d0 is the initial direction
+        '''
+        pp = (self.parameters["ideology"], 
+              self.parameters["quality"], 
+              self.parameters["seniority"])
+        step = abs(varrisk[len(varrisk) - 1])
+        # creates random movement
+        rdir = np.random.uniform(-1, 1, len(pp))
+        rdir = map(lambda x: x*step, rdir/np.linalg.norm(rdir))
+        odir = olddir[len(olddir) - 1]
+        if varrisk <= 0:
+            rdir = odir
+        else:
+            rdir = [abs(rdir[i])*-1*np.sign(odir[i]) for i in range(len(pp))]
+            nvector = [pp[i] + rdir[i] for i in range(len(pp))]
+        newvals = {"ideology": nvector[0], 
+                   "quality": nvector[1], 
+                   "seniority": nvector[2]}
+        for i in fix:
+            newvals[i] = 0
+        self.update_parameters(newvals)
+        return rdir
 
 class Army(Soldier):
     """ An ordered collection of soldiers """
@@ -223,11 +248,14 @@ class Army(Soldier):
 
         qq = [self.data[i].quality for i in listpool]
         qq = map(lambda x: x/max(qq), qq)
-        # ss = [params["seniority"]*self.data[i].seniority for i in listpool]
+        ss = [self.data[i].seniority for i in listpool]
+        ss = map(lambda x: x/max(ss), ss)
         ii = [abs(self.data[i].ideology - s_ideo) for i in listpool]
         ii = map(lambda x: x/max(ii), ii)
 
-        score = [params["quality"]*qq[i] - params["ideology"]*ii[i] 
+        score = [params["quality"]*qq[i] + 
+                 params["seniority"]*ss[i] - 
+                 params["ideology"]*ii[i] 
                  for i in range(len(listpool))]
         all_idx = all_indices(max(score), score)
         ## random choice only has grip when all_idx > 0
