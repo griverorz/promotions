@@ -117,7 +117,7 @@ class Ruler(object):
             newparams[k] = truncate(newparams[k], 0, 10)
         self.parameters = newparams
 
-    def adapt(self, varrisk, olddir, fix = ("seniority")):
+    def adapt(self, varrisk, olddir, fix = "seniority"):
         '''
         ruler self-explanatory
         drisk is a measure of risk differential associated with the current army
@@ -139,8 +139,12 @@ class Ruler(object):
         newvals = {"ideology": nvector[0], 
                    "quality": nvector[1], 
                    "seniority": nvector[2]}
-        for i in fix:
-            newvals[i] = 0
+        if fix:
+            if isinstance(fix, basestring):
+                newvals[fix] = 0
+            else:
+                for i in fix:
+                    newvals[i] = 0
         self.update_parameters(newvals)
         return rdir
 
