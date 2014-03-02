@@ -5,24 +5,20 @@ Simulation of promotions in a military
 Author: @griverorz
 '''
 
-import pdb
-import random
 import numpy as np
-import itertools
-import time
 import csv
-import math
 import psycopg2
 from copy import deepcopy
-import igraph
 import matplotlib.pyplot as plt
 
 ## auxiliary files
 from classdef import Soldier, Army, Ruler
 
+
 def external_risk(army):
     extval = np.mean([army.pquality[i] for i in army.get_rank(army.top_rank)])
     return 1 - extval
+
 
 def above_coup(army):
     total_value = [i[1] for i in army.factions.values()]
@@ -30,13 +26,13 @@ def above_coup(army):
 
 # def below_coup()
 
+
 def simulate(army, R, ordered, byunit):
     full_sim = dict.fromkeys(range(R))
     full_sim[0] = deepcopy(army)
     it = 1
 
-    full_risk_var = [-1]
-    full_olddir = [np.random.uniform(-1, 1, len(army["Ruler"].parameters))]
+    risk_var = 0
 
     while it < R:
         if it % 500 is 0:
@@ -45,19 +41,14 @@ def simulate(army, R, ordered, byunit):
         risk0 = army.risk()
 
         army.run_promotion(ordered, byunit)
-        newdir = army["Ruler"].adapt(full_risk_var, full_olddir)
+        army["Ruler"].adapt(risk_var, fix="seniority")
 
-        risk1 = army.risk()
-        risk_var = float(risk1 - risk0)
-        olddir = newdir
-
-        ## Append to history
-        full_risk_var.append(risk_var)
-        full_olddir.append(olddir)
+        risk_var = float(army.risk() - risk0)
 
         full_sim[it] = deepcopy(army)
         it += 1
     return full_sim
+
 
 # write results into csv
 def simulation_to_csv(simulation, ordered, byunit, filename, replication):
@@ -69,7 +60,6 @@ def simulation_to_csv(simulation, ordered, byunit, filename, replication):
         risk = simulation[i].risk()
         for j in simulation[i].units:
             iteration = simulation[i].data[j].report()
-            ff = dict.fromkeys(simulation[i].get_rank(simulation[i].top_rank))
             ## Assign none to non-generals factions
             if len(str(j)) is 1:
                 ff0, ff1 = simulation[i].factions[j][0], simulation[i].factions[j][1]
@@ -98,6 +88,7 @@ def simulation_to_csv(simulation, ordered, byunit, filename, replication):
                            simulation[i]["Ruler"].ideology]
             myfile.writerow(current_row)
     print 'File successfully written!'
+
 
 def newtable():
     conn = psycopg2.connect(database="promotions", host = "/tmp/.s.PGSQL.5432")
@@ -136,12 +127,12 @@ def newtable():
 if __name__ == "__main__":
     # newtable()
     baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
-    R = 1000
+    R = 3000
     # S = -10
-    for s in [0, 10]:
-        for r in [0, 10]:
-            params = {'ideology': r, 'quality': s, 'seniority': 1}
-            utility = {'internal': 0.0, 'external': 0.0}
+    for s in [0.0, 10.0]:
+        for r in [0.0, 10.0]:
+            params = {'ideology': r, 'quality': s, 'seniority': 0}
+            utility = {'internal': 0.0, 'external': 1.0}
             leonidas = Ruler(0.75, params, utility)
             original_sparta = Army(3, 3, 15, leonidas)
             original_sparta.fill()
@@ -162,9 +153,3 @@ if __name__ == "__main__":
                     conn.commit()
                     cur.close()
                     conn.close()
-
-# qq = [simp[i]["Ruler"].parameters["quality"] for i in range(len(simp))]
-# ii = [simp[i]["Ruler"].parameters["ideology"] for i in range(len(simp))]
-# plot(qq, ii)
-# show()
-

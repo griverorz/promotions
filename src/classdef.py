@@ -1,17 +1,15 @@
 #! /usr/bin/python
 
 """ MAIN CLASSES """
+import itertools
+import random
+from copy import deepcopy
+
+import numpy as np
+from igraph import Graph
 
 from helpers import *
-import math
-import sys
-import random
-import itertools
-import numpy as np
-from collections import defaultdict
-from copy import deepcopy
-from igraph import Graph
-import operator
+
 
 class Soldier(object):
     """ A soldier """
@@ -65,8 +63,7 @@ class Soldier(object):
         else:
             return(False)
 
-    def is_candidate(self, openrank, openunit, topage, ordered,
-                     byunit = False, slack = 1):
+    def is_candidate(self, openrank, openunit, topage, ordered, byunit=False, slack=1):
 
         def _possible_superiors(code):
             out = []
@@ -105,6 +102,7 @@ class Ruler(object):
         self.ideology = ideology
         self.parameters = params
         self.utility = utility
+        self.history = {"T": 0, "risk": [], "direction": []}
 
     def __str__(self):
         chars = "Ideology: {}, \nParameters: {}".format(
@@ -117,27 +115,30 @@ class Ruler(object):
             newparams[k] = truncate(newparams[k], 0, 10)
         self.parameters = newparams
 
-    def adapt(self, varrisk, olddir, fix = "seniority"):
-        '''
-        ruler self-explanatory
-        drisk is a measure of risk differential associated with the current army
-        d0 is the initial direction
-        '''
-        pp = (self.parameters["ideology"], 
-              self.parameters["quality"], 
+    def adapt(self, varrisk, fix="seniority"):
+        pp = (self.parameters["ideology"],
+              self.parameters["quality"],
               self.parameters["seniority"])
-        step = abs(varrisk[len(varrisk) - 1])
+
+        self.history["risk"].append(varrisk)
+        self.history["T"] += 1
         # creates random movement
         rdir = np.random.uniform(-1, 1, len(pp))
+        if (self.history["T"] is 1):
+            odir = list(rdir)
+        else:
+            odir = self.history["direction"][-1]
+        # by now, consider only the last element
+        step = abs(self.history["risk"][-1])
         rdir = map(lambda x: x*step, rdir/np.linalg.norm(rdir))
-        odir = olddir[len(olddir) - 1]
         if varrisk <= 0:
             rdir = odir
         else:
             rdir = [abs(rdir[i])*-1*np.sign(odir[i]) for i in range(len(pp))]
-            nvector = [pp[i] + rdir[i] for i in range(len(pp))]
-        newvals = {"ideology": nvector[0], 
-                   "quality": nvector[1], 
+
+        nvector = [pp[i] + rdir[i] for i in range(len(pp))]
+        newvals = {"ideology": nvector[0],
+                   "quality": nvector[1],
                    "seniority": nvector[2]}
         if fix:
             if isinstance(fix, basestring):
@@ -145,8 +146,9 @@ class Ruler(object):
             else:
                 for i in fix:
                     newvals[i] = 0
+        self.history["direction"].append(rdir)
         self.update_parameters(newvals)
-        return rdir
+
 
 class Army(Soldier):
     """ An ordered collection of soldiers """
@@ -187,13 +189,14 @@ class Army(Soldier):
         return self.top_rank - len(str(unit)) + 1
 
     def get_rank(self, rank):
-        rank = filter(lambda x: self.top_rank - len(str(x)) + 1 == rank, self.units)
+        rank = filter(lambda x: self.top_rank - len(str(x)) + 1 == rank,
+                      self.units)
         return rank
 
     def get_unit(self, soldier):
         for unit, who in self.data.iteritems():
             if who == soldier:
-               return(unit)
+                return(unit)
 
     def fill_quality(self):
         return float(np.random.beta(2, 4, 1))
@@ -233,11 +236,10 @@ class Army(Soldier):
         return retirees
 
     def up_for_promotion(self, openpos, ordered, byunit, slack):
-        pool =[]
+        pool = []
         openrank = self.unit_to_rank(openpos)
         for i in self.units:
-            if self[i] and self[i].is_candidate(openrank, openpos, self.top_age,
-                                                ordered, byunit, slack):
+            if self[i] and self[i].is_candidate(openrank, openpos, self.top_age, ordered, byunit, slack):
                 pool.append(i)
         return pool
 
@@ -257,9 +259,9 @@ class Army(Soldier):
         ii = [abs(self.data[i].ideology - s_ideo) for i in listpool]
         ii = map(lambda x: x/max(ii), ii)
 
-        score = [params["quality"]*qq[i] + 
-                 params["seniority"]*ss[i] - 
-                 params["ideology"]*ii[i] 
+        score = [params["quality"]*qq[i] +
+                 params["seniority"]*ss[i] -
+                 params["ideology"]*ii[i]
                  for i in range(len(listpool))]
         all_idx = all_indices(max(score), score)
         ## random choice only has grip when all_idx > 0
@@ -272,8 +274,7 @@ class Army(Soldier):
     def promote(self, openpos, ordered, byunit):
         unavail = []
         openpos = filter(lambda x: self.unit_to_rank(x) is not 1, openpos)
-        openpos = sorted(openpos, key = lambda x: self.unit_to_rank(x),
-                         reverse = True)
+        openpos = sorted(openpos, key=lambda x: self.unit_to_rank(x), reverse=True)
 
         while openpos:
             toreplace = openpos[0]
@@ -314,8 +315,8 @@ class Army(Soldier):
 
                 if self.unit_to_rank(idx) > 1:
                     openpos = [idx] + openpos
-                    openpos = sorted(openpos, key = lambda x: self.unit_to_rank(idx),
-                                     reverse = True)
+                    openpos = sorted(openpos, key=lambda x: self.unit_to_rank(idx),
+                                     reverse=True)
 
     def network(self):
         def _make_link(i, j):
@@ -358,14 +359,13 @@ class Army(Soldier):
             self.data[mia] = Soldier(1, ss, aa, qq, ii, mia)
 
     def test(self):
-        ftest = True
         # No empty position
         tests = dict.fromkeys(["novacancies", "allalive",
                                "rconsistent", "uconsistent", "nodupes"])
         tests["novacancies"] = any(i is not None for i in self.data.values())
         # Position in agreement with rank
         tests["rconsistent"] = all([self.data[i].rank is self.unit_to_rank(i)
-                               for i in self.units])
+                                    for i in self.units])
         tests["allalive"] = all([self.data[i].alive for i in self.units])
         # Units in agreement
         tests["uconsistent"] = all([self.data[i].unit is i for i in self.units])
@@ -399,7 +399,6 @@ class Army(Soldier):
             for j in tmp_factions[i][0]:
                 self.factions[j] = (i, tmp_factions[i][1])
 
-
     def external_risk(self):
         extval = np.mean([self.pquality[i] for i in self.get_rank(self.top_rank)])
         return 1.0 - extval
@@ -422,4 +421,4 @@ class Army(Soldier):
         self.recruit_soldiers()
         self.get_quality()
         self.get_factions()
-        self.test()
+        # self.test()
