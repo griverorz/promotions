@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 
 ## auxiliary files
 from classdef import Soldier, Army, Ruler
-
+from helpers import herfindahl
 
 def external_risk(army):
     extval = np.mean([army.pquality[i] for i in army.get_rank(army.top_rank)])
@@ -26,7 +26,7 @@ def above_coup(army):
 
 
 # def below_coup()
-def simulate(army, R, ordered, byunit):
+def simulate(army, R, ordered):
     full_sim = dict.fromkeys(range(R))
     full_sim[0] = deepcopy(army)
     it = 1
@@ -39,7 +39,7 @@ def simulate(army, R, ordered, byunit):
 
         risk0 = army.risk()
 
-        army.run_promotion(ordered, byunit)
+        army.run_promotion(ordered)
         army["Ruler"].adapt(risk_var, fix="seniority")
 
         risk_var = float(army.risk() - risk0)
@@ -50,7 +50,7 @@ def simulate(army, R, ordered, byunit):
 
 
 # write results into csv
-def simulation_to_csv(simulation, ordered, byunit, filename, replication):
+def simulation_to_csv(simulation, ordered, filename, replication):
     myfile = csv.writer(open(filename, 'wb'))
 
     R = len(simulation)
@@ -83,7 +83,6 @@ def simulation_to_csv(simulation, ordered, byunit, filename, replication):
                            simulation[i]["Ruler"].utility["external"],
                            risk,
                            ordered,
-                           byunit,
                            simulation[i]["Ruler"].ideology]
             myfile.writerow(current_row)
     print 'File successfully written!'
@@ -115,7 +114,6 @@ def newtable():
         UTILITY_EXT double precision,
         RISK double precision,
         CONSTRAINTS varchar,
-        FROM_WITHIN varchar,
         RULER_IDEOLOGY double precision);
         """
     )
@@ -140,15 +138,14 @@ if __name__ == "__main__":
 
             print "Replication {}-{}".format(r, s)
             for oo in [True, False]:
-                for uu in [True, False]:
-                    sparta = deepcopy(original_sparta)
-                    print "Inits: {}, Ordered: {}, Internal: {}".format(params, oo, uu)
-                    simp = simulate(sparta, R, oo, uu)
-                    fname = baseloc+'sim_'+str(oo)+'_'+str(uu)+'_'+str(s)+'.txt'
-                    simulation_to_csv(simp, oo, uu, fname, str(r)+str(s))
-                    conn = psycopg2.connect(database="promotions")
-                    cur = conn.cursor()
-                    cur.execute('COPY "simp" FROM %s CSV;', [str(fname)])
-                    conn.commit()
-                    cur.close()
-                    conn.close()
+                sparta = deepcopy(original_sparta)
+                print "Inits: {}, Ordered: {}".format(params, oo)
+                simp = simulate(sparta, R, oo)
+                fname = baseloc+'sim_'+str(oo)+'_'+str(s)+'.txt'
+                simulation_to_csv(simp, oo, fname, str(r)+str(s))
+                conn = psycopg2.connect(database="promotions")
+                cur = conn.cursor()
+                cur.execute('COPY "simp" FROM %s CSV;', [str(fname)])
+                conn.commit()
+                cur.close()
+                conn.close()
