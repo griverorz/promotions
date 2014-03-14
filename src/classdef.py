@@ -393,7 +393,8 @@ class Army(Soldier):
             return qq
         for i in self.units:
             self.uquality[i] = _individual_quality(i)
-            self.pquality[i] = self.uquality[i]/self.data[i].quality
+            self.pquality[i] = self.uquality[i]/ \
+                               (self.data[i].rank*self.data[i].seniority)
 
     def get_factions(self):
         nn = self.network()
@@ -419,7 +420,8 @@ class Army(Soldier):
 
     def risk(self):
         uu = self["Ruler"].utility
-        urisk = uu["internal"]*self.above_coup() + uu["external"]*self.external_risk()
+        urisk = uu["internal"]*self.above_coup() + \
+                uu["external"]*self.external_risk()
         return urisk
 
     def run_promotion(self, ordered):

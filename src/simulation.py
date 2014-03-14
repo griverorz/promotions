@@ -9,10 +9,9 @@ import numpy as np
 import csv
 import psycopg2
 from copy import deepcopy
-import matplotlib.pyplot as plt
 
 ## auxiliary files
-from classdef import Soldier, Army, Ruler
+from classdef import Army, Ruler
 from helpers import herfindahl
 
 
@@ -125,7 +124,7 @@ def newtable():
 if __name__ == "__main__":
     # newtable()
     baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
-    R = 5000
+    R = 1000
     # S = -10
     for s in [0.0, 10.0]:
         for r in [0.0, 10.0]:

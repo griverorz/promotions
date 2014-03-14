@@ -83,16 +83,16 @@ params <- dbGetQuery(con,
 "select replication, avg(params_ideo) as pideo,
         avg(params_qual) as pqual,
         iteration,
-        constraints, ruler_ideology, from_within
+        constraints, ruler_ideology
 from simp
-group by replication, iteration, constraints, ruler_ideology, from_within
+group by replication, iteration, constraints, ruler_ideology
 order by iteration;")
 dbDisconnect(con)
 
-## params0 <- params[params$iteration >= 1000, ]
+## params0 <- params[params$iteration >= 950, ]
 p <- ggplot(params, aes(x = pideo, y = pqual, group = factor(replication)))
 pq <- p + geom_path(aes(group = replication, colour = factor(replication))) +
-    facet_grid(constraints ~ from_within) + 
+    facet_grid(~ constraints) + 
     scale_y_continuous(limits = c(0,10)) + 
     scale_x_continuous(limits = c(0,10))
 print(pq)
