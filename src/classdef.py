@@ -28,13 +28,13 @@ class Soldier(object):
         self.utility = (self.age - self.rank)**2*self.quality*self.seniority
 
     def __str__(self):
-        chars = 'Rank: {}, \nSeniority: {}, \nAge: {}, \nQuality: {}, \nIdeology: {}, \nAlive: {}'.format(
-            self.rank,
-            self.seniority,
-            self.age,
-            self.quality,
-            self.ideology,
-            self.alive)
+        chars = 'Rank: {}, \nSeniority: {}, \nAge: {}, \nQuality: {}, \nIdeology: {}'.\
+                format(
+                    self.rank,
+                    self.seniority,
+                    self.age,
+                    self.quality,
+                    self.ideology)
         return chars
 
     def report(self):
@@ -63,7 +63,7 @@ class Soldier(object):
         else:
             return(False)
 
-    def is_candidate(self, openrank, openunit, topage, ordered, byunit=False, slack=1):
+    def is_candidate(self, openrank, openunit, topage, ordered, slack=1):
 
         def _possible_superiors(code):
             out = []
@@ -73,8 +73,8 @@ class Soldier(object):
             return out
 
         is_sub = True
-        if byunit:
-            is_sub = openunit in _possible_superiors(self.unit)
+        # if byunit:
+        #     is_sub = openunit in _possible_superiors(self.unit)
 
         def _candidate(openrank, topage, ordered, slack):
             isc = False
@@ -199,7 +199,7 @@ class Army(Soldier):
                 return(unit)
 
     def fill_quality(self):
-        return float(np.random.beta(2, 4, 1))
+        return float(np.random.beta(1, 1, 1))
 
     def fill_ideology(self):
         return 2*float(np.random.beta(3, 3, 1)) - 1
@@ -235,34 +235,43 @@ class Army(Soldier):
                 retirees.append(i)
         return retirees
 
-    def up_for_promotion(self, openpos, ordered, byunit, slack):
+    def up_for_promotion(self, openpos, ordered, slack):
         pool = []
         openrank = self.unit_to_rank(openpos)
         for i in self.units:
-            if self[i] and self[i].is_candidate(openrank, openpos, self.top_age, ordered, byunit, slack):
+            if self[i] and self[i].is_candidate(openrank, openpos,
+                                                self.top_age, ordered, slack):
                 pool.append(i)
         return pool
 
-    def picker(self, openpos, listpool, byunit):
+    def picker(self, openpos, listpool):
+        """
+        If the unit is to be a general, use the position of the Ruler;
+        otherwise, that of the superior
+        """
         superior = self.get_superior(openpos)
-        if superior is 'Ruler' or byunit is False:
+        if superior is 'Ruler':
             s_ideo = self.data['Ruler'].ideology
         else:
             s_ideo = self.data[superior].ideology
 
         params = self["Ruler"].parameters
 
-        qq = [self.data[i].quality for i in listpool]
-        qq = map(lambda x: x/max(qq), qq)
-        ss = [self.data[i].seniority for i in listpool]
-        ss = map(lambda x: x/max(ss), ss)
         ii = [abs(self.data[i].ideology - s_ideo) for i in listpool]
         ii = map(lambda x: x/max(ii), ii)
 
-        score = [params["quality"]*qq[i] +
-                 params["seniority"]*ss[i] -
-                 params["ideology"]*ii[i]
-                 for i in range(len(listpool))]
+        if superior is 'Ruler':
+            qq = [self.data[i].quality for i in listpool]
+            qq = map(lambda x: x/max(qq), qq)
+            ss = [self.data[i].seniority for i in listpool]
+            ss = map(lambda x: x/max(ss), ss)
+
+            score = [params["quality"]*qq[i] +
+                     params["seniority"]*ss[i] -
+                     params["ideology"]*ii[i]
+                     for i in range(len(listpool))]
+        else:
+            score = [-ii[i] for i in range(len(listpool))]
         all_idx = all_indices(max(score), score)
         ## random choice only has grip when all_idx > 0
         ## and that only happens when there are ties
@@ -320,6 +329,11 @@ class Army(Soldier):
 
     def network(self):
         def _make_link(i, j):
+            if i - j <= 0.75:
+                out = 1
+            else:
+                out = 0
+            return out
             diff = np.exp(-3.*(abs(i - j)))
             return np.random.binomial(1, diff)
         tr = self.unit_size
@@ -377,15 +391,11 @@ class Army(Soldier):
             print "Fails tests: " + ', '.join(fails)
 
     def get_quality(self):
-        def _iq(x):
-            qq = self.data[x].quality * self.data[x].rank * self.data[x].seniority
+        def _individual_quality(x):
+            qq = self.data[x].quality*self.data[x].rank*self.data[x].seniority
             return qq
         for i in self.units:
-            gq = map(_iq, self.get_subordinates(i))
-            subterm = reduce(lambda x, y: x + y, gq, 1)
-            self.uquality[i] = subterm * _iq(i)
-            maxquality = subterm * _iq(i)/self.data[i].quality
-            self.pquality[i] = self.uquality[i]/maxquality
+            self.pquality[i] = _individual_quality(i)/self.data[i].quality
 
     def get_factions(self):
         nn = self.network()
@@ -416,7 +426,7 @@ class Army(Soldier):
 
     def run_promotion(self, ordered, byunit):
         openpos = self.up_for_retirement()
-        self.promote(openpos, ordered, byunit)
+        self.promote(openpos, ordered)
         self.pass_time()
         self.recruit_soldiers()
         self.get_quality()

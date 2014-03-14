@@ -24,9 +24,8 @@ def above_coup(army):
     total_value = [i[1] for i in army.factions.values()]
     return herfindahl(total_value)
 
+
 # def below_coup()
-
-
 def simulate(army, R, ordered, byunit):
     full_sim = dict.fromkeys(range(R))
     full_sim[0] = deepcopy(army)
@@ -91,7 +90,7 @@ def simulation_to_csv(simulation, ordered, byunit, filename, replication):
 
 
 def newtable():
-    conn = psycopg2.connect(database="promotions", host = "/tmp/.s.PGSQL.5432")
+    conn = psycopg2.connect(database="promotions", host="/tmp/.s.PGSQL.5432")
     cur = conn.cursor()
 
     cur.execute(
@@ -127,7 +126,7 @@ def newtable():
 if __name__ == "__main__":
     # newtable()
     baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
-    R = 3000
+    R = 5000
     # S = -10
     for s in [0.0, 10.0]:
         for r in [0.0, 10.0]:
