@@ -72,10 +72,6 @@ class Soldier(object):
                 out.append(code)
             return out
 
-        is_sub = True
-        # if byunit:
-        #     is_sub = openunit in _possible_superiors(self.unit)
-
         def _candidate(openrank, topage, ordered, slack):
             isc = False
             condalive = self.age < topage and self.alive
@@ -87,6 +83,7 @@ class Soldier(object):
                     isc = True
             return isc
 
+        is_sub = openunit in _possible_superiors(self.unit)
         isc = _candidate(openrank, topage, ordered, slack) and is_sub
         return isc
 
@@ -280,7 +277,7 @@ class Army(Soldier):
         idx = listpool[random.choice(all_idx)]
         return idx
 
-    def promote(self, openpos, ordered, byunit):
+    def promote(self, openpos, ordered):
         unavail = []
         openpos = filter(lambda x: self.unit_to_rank(x) is not 1, openpos)
         openpos = sorted(openpos, key=lambda x: self.unit_to_rank(x), reverse=True)
@@ -289,11 +286,11 @@ class Army(Soldier):
             toreplace = openpos[0]
             # print "Replacing {}...".format(toreplace)
             slack = 1
-            pool = self.up_for_promotion(toreplace, ordered, byunit, 1)
+            pool = self.up_for_promotion(toreplace, ordered, 1)
 
             while not pool and (self.unit_to_rank(toreplace) - slack) > 1:
                 slack += 1
-                pool = self.up_for_promotion(toreplace, ordered, byunit, slack)
+                pool = self.up_for_promotion(toreplace, ordered, slack)
                 print "Looking one level deeper"
 
             pool = list(set(pool).difference(set(unavail)))
@@ -311,7 +308,7 @@ class Army(Soldier):
                 unavail.append(toreplace)
 
             else:
-                idx = self.picker(toreplace, pool, byunit)
+                idx = self.picker(toreplace, pool)
                 # print "\tPromoting {}...".format(idx)
                 self.data[toreplace] = deepcopy(self.data[idx])
                 self.data[toreplace].seniority = 0
@@ -395,7 +392,8 @@ class Army(Soldier):
             qq = self.data[x].quality*self.data[x].rank*self.data[x].seniority
             return qq
         for i in self.units:
-            self.pquality[i] = _individual_quality(i)/self.data[i].quality
+            self.uquality[i] = _individual_quality(i)
+            self.pquality[i] = self.uquality[i]/self.data[i].quality
 
     def get_factions(self):
         nn = self.network()
@@ -424,7 +422,7 @@ class Army(Soldier):
         urisk = uu["internal"]*self.above_coup() + uu["external"]*self.external_risk()
         return urisk
 
-    def run_promotion(self, ordered, byunit):
+    def run_promotion(self, ordered):
         openpos = self.up_for_retirement()
         self.promote(openpos, ordered)
         self.pass_time()

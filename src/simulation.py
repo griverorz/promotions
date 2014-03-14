@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from classdef import Soldier, Army, Ruler
 from helpers import herfindahl
 
+
 def external_risk(army):
     extval = np.mean([army.pquality[i] for i in army.get_rank(army.top_rank)])
     return 1 - extval
