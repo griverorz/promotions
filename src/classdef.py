@@ -67,8 +67,8 @@ class Soldier(object):
 
         def _possible_superiors(code):
             out = []
-            while len(str(code)) > 1:
-                code = code/10
+            while len(code) > 1:
+                code = code[0:(len(code)-1)]
                 out.append(code)
             return out
 
@@ -149,11 +149,13 @@ class Ruler(object):
 
 class Army(Soldier):
     """ An ordered collection of soldiers """
-    def __init__(self, unit_size, top_rank, top_age, ruler):
+    def __init__(self, number_units, unit_size, top_rank, top_age, ruler):
+        self.number_units = number_units
         self.unit_size = unit_size
         self.top_rank = top_rank
         self.top_age = top_age
-        self.units = generate_army_codes(self.top_rank, self.unit_size)
+        self.units = generate_army_codes(self.number_units,
+                                         self.top_rank, self.unit_size)
         self.data = dict.fromkeys(self.units)
         self.data["Ruler"] = ruler
         self.uquality = dict.fromkeys(self.units)
@@ -183,11 +185,10 @@ class Army(Soldier):
         return self.data[key]
 
     def unit_to_rank(self, unit):
-        return self.top_rank - len(str(unit)) + 1
+        return self.top_rank - len(unit) + 1
 
     def get_rank(self, rank):
-        rank = filter(lambda x: self.top_rank - len(str(x)) + 1 == rank,
-                      self.units)
+        rank = filter(lambda x: self.top_rank - len(x) + 1 == rank, self.units)
         return rank
 
     def get_unit(self, soldier):
@@ -201,29 +202,16 @@ class Army(Soldier):
     def fill_ideology(self):
         return 2*float(np.random.beta(3, 3, 1)) - 1
 
-    def find_subordinates(self, unit):
-        subs_list = [unit]
-        if len(str(unit)) >= self.top_rank:
-            return subs_list
-        else:
-            children = [int(str(unit) + str((i % self.unit_size) + 1))
-                        for i in range(self.unit_size)]
-            for i in children:
-                subs = self.find_subordinates(i)
-                subs_list.append(subs)
-        return subs_list
-
     def get_subordinates(self, unit):
-        subs = self.find_subordinates(unit)
-        fsubs = flatten(subs)
-        fsubs.pop(0)
-        return fsubs
+        cand = [unit == i[0:len(unit)] for i in self.units]
+        subs = [j for i, j in zip(cand, self.units) if i is True and j != unit]
+        return subs
 
     def get_superior(self, unit):
-        if len(str(unit)) is 1:
+        if len(unit) is 1:
             return 'Ruler'
         else:
-            return unit/10
+            return unit[0:(len(unit)-1)]
 
     def up_for_retirement(self):
         retirees = []
@@ -296,7 +284,7 @@ class Army(Soldier):
             pool = list(set(pool).difference(set(unavail)))
 
             if not pool:
-                print "\tCreating {}'s holder".format(toreplace)
+                print "\tCreating {} holder".format(toreplace)
                 rr = self.unit_to_rank(toreplace)
                 aa = self.top_age - 1
                 ss = 0
@@ -333,7 +321,7 @@ class Army(Soldier):
             return out
             diff = np.exp(-3.*(abs(i - j)))
             return np.random.binomial(1, diff)
-        tr = self.unit_size
+        tr = self.number_units
         nw = np.zeros((tr, tr), int)
         gg = self.get_rank(self.top_rank)
         for i in range(len(gg)):
@@ -346,7 +334,7 @@ class Army(Soldier):
                     else:
                         nw[i, j], nw[j, i] = 0, 0
         g = Graph.Adjacency(nw.tolist()).as_undirected()
-        g.vs["label"] = range(1, self.unit_size + 1)
+        g.vs["label"] = range(self.number_units)
         return g
 
     def pass_time(self):
@@ -401,7 +389,7 @@ class Army(Soldier):
         nc = nn.clusters()
         tmp_factions = dict.fromkeys([i for i in range(len(nc))])
         for i in tmp_factions.keys():
-            idx = [nn.vs["label"][sold] for sold in nc[i]]
+            idx = [(nn.vs["label"][sold],) for sold in nc[i]]
             tmp_factions[i] = (idx, sum(self.uquality[uu] for uu in idx))
         ## Format for class
         for i in tmp_factions.keys():

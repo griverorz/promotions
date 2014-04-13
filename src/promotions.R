@@ -89,8 +89,8 @@ group by replication, iteration, constraints, ruler_ideology
 order by iteration;")
 dbDisconnect(con)
 
-## params0 <- params[params$iteration >= 950, ]
-p <- ggplot(params, aes(x = pideo, y = pqual, group = factor(replication)))
+params0 <- params[params$iteration >= 1950, ]
+p <- ggplot(params0, aes(x = pideo, y = pqual, group = factor(replication)))
 pq <- p + geom_path(aes(group = replication, colour = factor(replication))) +
     facet_grid(~ constraints) + 
     scale_y_continuous(limits = c(0,10)) + 
@@ -104,9 +104,9 @@ con <- dbConnect(drv,
 risk <- dbGetQuery(con,
 "select replication, risk,
         iteration,
-        constraints, ruler_ideology, from_within
+        constraints, ruler_ideology
 from simp
-group by replication, risk, iteration, constraints, ruler_ideology, from_within
+group by replication, risk, iteration, constraints, ruler_ideology
 order by iteration;")
 dbDisconnect(con)
 
@@ -114,7 +114,7 @@ p <- ggplot(risk, aes(x = iteration, y = risk, group = replication))
 pq <- p +  geom_line(aes(group = replication, colour = replication)) +
     geom_smooth(formula = y ~ bs(x), method = "lm") +
     scale_y_continuous(limits = c(0, 1)) +
-    facet_grid(constraints ~ from_within)
+    facet_grid(~ constraints)
 print(pq)
 
 #################### INDIVIDUAL TRAJECTORIES ####################

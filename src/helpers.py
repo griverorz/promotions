@@ -2,6 +2,7 @@
 
 import collections
 import numpy as np
+import itertools
 
 
 def argmax(lst):
@@ -71,24 +72,17 @@ def product(vv):
     return(reduce(lambda x, y: x*y, vv))
 
 
-def generate_first_code(toprank, level):
-    """ 1 is lowest rank """
-    ll = (toprank - level) + 1
-    out = []
-    for i in range(ll):
-        out.append(10**i)
-    return sum(out)
-
-
-def generate_base_codes(toprank, unitsize):
-    list_codes = []
-    start = generate_first_code(toprank, 1)
-    pop_rank = unitsize**toprank
-
-    for i in range(pop_rank):
-        id = baseconvert(i, [str(j) for j in range(unitsize)])
-        list_codes.append(start + int(id))
-    return(list_codes)
+def unfold_tree(code, depth, unitsize):
+    if len(code) >= depth:
+        return(code)
+    else:
+        if len(code) is 1:
+            subs = generate_subordinates(code, unitsize)
+        if len(code) > 1:
+            code = code[-1]
+            subs = [generate_subordinates(i, unitsize) for i in code]
+        code = [code] + [subs]
+        return([unfold_tree(i, unitsize, depth) for i in code])
 
 
 def flatten(x):
@@ -99,12 +93,22 @@ def flatten(x):
         return [x]
 
 
-def generate_army_codes(toprank, unitsize):
-    basic_level = reference = generate_base_codes(toprank, unitsize)
-    for rank in range(1, toprank):
-        reference = set([i/10 for i in reference])
-        basic_level.append(list(reference))
-    return flatten(basic_level)
+def generate_level_codes(units, depth, unitsize):
+    tree = list([0]*units)
+    for i in range(units):
+        tree[i] = list(itertools.product(range(unitsize), repeat=depth))
+        tree[i] = [(i, ) + j for j in tree[i]]
+        i += 1
+    tree = [l for sublist in list(tree) for l in sublist]
+    return tree
+
+
+def generate_army_codes(units, depth, unitsize):
+    level = []
+    for i in range(depth):
+        level.append(generate_level_codes(units, i, unitsize))
+    level = [l for sublist in level for l in sublist]
+    return level
 
 
 def all_indices(value, qlist):
@@ -140,3 +144,4 @@ def wdirection(vector):
         return [ww*vv[j] for j in range(len(vv))]
     x = [_wv(weights[i], vector[i]) for i in range(len(vector))]
     return list(sum(np.array(x)))
+                                        
