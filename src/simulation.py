@@ -1,4 +1,4 @@
-#! /usr/bin/python
+ #! /usr/bin/python
 
 '''
 Simulation of promotions in a military
@@ -89,7 +89,7 @@ def simulation_to_csv(simulation, ordered, filename, replication):
 
 
 def newtable():
-    conn = psycopg2.connect(database="promotions", host="/tmp/.s.PGSQL.5432")
+    conn = psycopg2.connect(database="promotions")
     cur = conn.cursor()
 
     cur.execute(
@@ -124,14 +124,14 @@ def newtable():
 if __name__ == "__main__":
     # newtable()
     baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
-    R = 1000
+    R = 2000
     # S = -10
     for s in [0.0, 10.0]:
         for r in [0.0, 10.0]:
             params = {'ideology': r, 'quality': s, 'seniority': 0}
-            utility = {'internal': 0.0, 'external': 1.0}
+            utility = {'internal': 0.5, 'external': 0.5}
             leonidas = Ruler(0.75, params, utility)
-            original_sparta = Army(3, 3, 15, leonidas)
+            original_sparta = Army(3, 3, 3, 15, leonidas)
             original_sparta.fill()
             original_sparta.get_quality()
             original_sparta.get_factions()
