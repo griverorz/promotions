@@ -70,7 +70,7 @@ def simulation_to_csv(simulation, ordered, filename, replication):
                            iteration['age'],
                            iteration['rank'],
                            iteration['seniority'],
-                           iteration['unit'],
+                           "".join(str(x) for x in iteration['unit']),
                            iteration['quality'],
                            iteration['ideology'],
                            simulation[i].uquality[j],
@@ -101,7 +101,7 @@ def newtable():
         AGE integer,
         RANK integer,
         SENIORITY integer,
-        UNIT integer,
+        UNIT varchar,
         QUALITY double precision,
         IDEOLOGY double precision,
         UQUALITY double precision,
@@ -124,14 +124,14 @@ def newtable():
 if __name__ == "__main__":
     # newtable()
     baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
-    R = 2000
+    R = 5000
     # S = -10
     for s in [0.0, 10.0]:
         for r in [0.0, 10.0]:
             params = {'ideology': r, 'quality': s, 'seniority': 0}
             utility = {'internal': 0.5, 'external': 0.5}
             leonidas = Ruler(0.75, params, utility)
-            original_sparta = Army(3, 3, 3, 15, leonidas)
+            original_sparta = Army(10, 3, 3, 15, leonidas)
             original_sparta.fill()
             original_sparta.get_quality()
             original_sparta.get_factions()
@@ -141,7 +141,7 @@ if __name__ == "__main__":
                 sparta = deepcopy(original_sparta)
                 print "Inits: {}, Ordered: {}".format(params, oo)
                 simp = simulate(sparta, R, oo)
-                fname = baseloc+'sim_'+str(oo)+'_'+str(s)+'.txt'
+                fname = baseloc+'sim_'+str(oo)+'_'+str(s)+'.csv'
                 simulation_to_csv(simp, oo, fname, str(r)+str(s))
                 conn = psycopg2.connect(database="promotions")
                 cur = conn.cursor()
