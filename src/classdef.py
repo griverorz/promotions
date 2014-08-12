@@ -454,7 +454,7 @@ class Simulation(object):
             self.history[it] = deepcopy(self.army)
             it += 1
 
-    def to_csv(self):
+    def to_csv(self, replication):
         myfile = csv.writer(open(self.filename, 'wb'))
 
         R = self.R
@@ -487,7 +487,7 @@ class Simulation(object):
                                sim["Ruler"].utility["internal"],
                                sim["Ruler"].utility["external"],
                                risk,
-                               ordered,
+                               self.ordered,
                                sim["Ruler"].ideology]
                 myfile.writerow(current_row)
         print 'File successfully written!'
@@ -522,6 +522,7 @@ class Simulation(object):
             RULER_IDEOLOGY double precision);
             """
         )
+        conn.commit()
         cur.close()
         conn.close()
 

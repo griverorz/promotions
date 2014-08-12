@@ -46,7 +46,7 @@ def main(argv):
                 sargs = {'R':100, 'ordered':True, 'fixed':'seniority'}
                 simp.populate(sparta, fname, sargs)
                 simp.run()
-                simp.to_csv()
+                simp.to_csv(str(r)+str(s))
                 simp.to_table()
 
 if __name__ == '__main__':
