@@ -72,19 +72,6 @@ def product(vv):
     return(reduce(lambda x, y: x*y, vv))
 
 
-def unfold_tree(code, depth, unitsize):
-    if len(code) >= depth:
-        return(code)
-    else:
-        if len(code) is 1:
-            subs = generate_subordinates(code, unitsize)
-        if len(code) > 1:
-            code = code[-1]
-            subs = [generate_subordinates(i, unitsize) for i in code]
-        code = [code] + [subs]
-        return([unfold_tree(i, unitsize, depth) for i in code])
-
-
 def flatten(x):
     ## stackoverflow.com/questions/2158395/flatten-an-irregular-list-of-lists-in-python
     if isinstance(x, collections.Iterable):
@@ -144,4 +131,3 @@ def wdirection(vector):
         return [ww*vv[j] for j in range(len(vv))]
     x = [_wv(weights[i], vector[i]) for i in range(len(vector))]
     return list(sum(np.array(x)))
-                                        

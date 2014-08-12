@@ -89,8 +89,8 @@ group by replication, iteration, constraints, ruler_ideology
 order by iteration;")
 dbDisconnect(con)
 
-params0 <- params[params$iteration >= 1950, ]
-p <- ggplot(params0, aes(x = pideo, y = pqual, group = factor(replication)))
+## params0 <- params[params$iteration >= 1950, ]
+p <- ggplot(params, aes(x = pideo, y = pqual, group = factor(replication)))
 pq <- p + geom_path(aes(group = replication, colour = factor(replication))) +
     facet_grid(~ constraints) + 
     scale_y_continuous(limits = c(0,10)) + 
