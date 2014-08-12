@@ -4,10 +4,10 @@
 import itertools
 import random
 from copy import deepcopy
-
+import psycopg2
 import numpy as np
 from igraph import Graph
-
+import csv
 from helpers import *
 
 
@@ -107,26 +107,27 @@ class Ruler(object):
             self.parameters.values())
         return chars
 
-    def update_parameters(self, newparams):
-        for k in newparams.keys():
-            newparams[k] = truncate(newparams[k], 0, 10)
+    def update(self, newparams):
+        # for k in newparams.keys():
+        #     newparams[k] = truncate(newparams[k], 0, 10)
         self.parameters = newparams
 
-    def adapt(self, varrisk, fix="seniority"):
+    def adapt(self, varrisk, fix):
         pp = (self.parameters["ideology"],
               self.parameters["quality"],
               self.parameters["seniority"])
 
         self.history["risk"].append(varrisk)
         self.history["T"] += 1
-        # creates random movement
+        
         rdir = np.random.uniform(-1, 1, len(pp))
+
         if (self.history["T"] is 1):
             odir = list(rdir)
         else:
             odir = self.history["direction"][-1]
-        # by now, consider only the last element
-        step = abs(self.history["risk"][-1])
+
+        step = 0.1
         rdir = map(lambda x: x*step, rdir/np.linalg.norm(rdir))
         if varrisk <= 0:
             rdir = odir
@@ -144,7 +145,7 @@ class Ruler(object):
                 for i in fix:
                     newvals[i] = 0
         self.history["direction"].append(rdir)
-        self.update_parameters(newvals)
+        self.update(newvals)
 
 
 class Army(Soldier):
@@ -163,7 +164,7 @@ class Army(Soldier):
         self.factions = dict.fromkeys(self.get_rank(self.top_rank))
         self.urisk = 0
 
-    def fill(self):
+    def populate(self):
         for unit in self.units:
             rr = self.unit_to_rank(unit)
             refbase = (self.top_rank + 1) - rr
@@ -420,3 +421,114 @@ class Army(Soldier):
         self.get_quality()
         self.get_factions()
         # self.test()
+
+
+class Simulation(object):
+    def __init__(self):
+        pass
+
+    def populate(self, army, filename, args):
+        self.army = army
+        self.R = args["R"]
+        self.ordered = args["ordered"]
+        self.fixed = args["fixed"]
+        self.history = dict.fromkeys(range(self.R))
+        self.history[0] = deepcopy(self.army)
+        self.filename = filename
+
+    def run(self):
+        it = 1
+        risk_var = 0
+
+        while it < self.R:
+            if it % 500 is 0:
+                print "Iteration {}".format(it)
+
+            risk0 = self.army.risk()
+
+            self.army.run_promotion(self.ordered)
+            self.army["Ruler"].adapt(risk_var, fix=self.fixed)
+
+            risk_var = float(self.army.risk() - risk0)
+
+            self.history[it] = deepcopy(self.army)
+            it += 1
+
+    def to_csv(self):
+        myfile = csv.writer(open(self.filename, 'wb'))
+
+        R = self.R
+
+        for i in range(1, R):
+            sim = self.history[i]
+            risk = sim.risk()
+            for j in sim.units:
+                iteration = sim.data[j].report()
+                ## Assign none to non-generals factions
+                if len(str(j)) is 1:
+                    ff0, ff1 = sim.factions[j][0], sim.factions[j][1]
+                else:
+                    ff0, ff1 = None, None
+
+                current_row = [replication,
+                               i,
+                               iteration['age'],
+                               iteration['rank'],
+                               iteration['seniority'],
+                               "".join(str(x) for x in iteration['unit']),
+                               iteration['quality'],
+                               iteration['ideology'],
+                               sim.uquality[j],
+                               ff0,
+                               ff1,
+                               sim["Ruler"].parameters["ideology"],
+                               sim["Ruler"].parameters["quality"],
+                               sim["Ruler"].parameters["seniority"],
+                               sim["Ruler"].utility["internal"],
+                               sim["Ruler"].utility["external"],
+                               risk,
+                               ordered,
+                               sim["Ruler"].ideology]
+                myfile.writerow(current_row)
+        print 'File successfully written!'
+
+
+    def newtable(self, database):
+        conn = psycopg2.connect(database=database)
+        cur = conn.cursor()
+
+        cur.execute(
+            """
+            DROP TABLE IF EXISTS "simp";
+            CREATE TABLE "simp" (
+            REPLICATION varchar,
+            ITERATION integer,
+            AGE integer,
+            RANK integer,
+            SENIORITY integer,
+            UNIT varchar,
+            QUALITY double precision,
+            IDEOLOGY double precision,
+            UQUALITY double precision,
+            WHICH_FACTION integer,
+            FORCE_FACTION double precision,
+            PARAMS_IDEO double precision,
+            PARAMS_QUAL double precision,
+            PARAMS_SEN double precision,
+            UTILITY_INT double precision,
+            UTILITY_EXT double precision,
+            RISK double precision,
+            CONSTRAINTS varchar,
+            RULER_IDEOLOGY double precision);
+            """
+        )
+        cur.close()
+        conn.close()
+
+    def to_table(self):
+        conn = psycopg2.connect(database="promotions")
+        cur = conn.cursor()
+        cur.execute('COPY "simp" FROM %s CSV;', [str(self.filename)])
+        conn.commit()
+        cur.close()
+        conn.close()
