@@ -9,11 +9,10 @@ Date: 28-Jan-2015 22:03
 import itertools
 import random
 from copy import deepcopy
-import psycopg2
 import numpy as np
-import csv
 from helpers import *
-
+from sqlalchemy import create_engine
+from sqlalchemy import Column, Integer, String, Double
 
 class Soldier(object):
     """ A soldier """
@@ -355,6 +354,29 @@ class Army(Soldier):
         self.get_quality()
 
 
+class DataTable(DBase):
+    """ DB of simulations """
+    __tablename__ = "promotions"
+
+    id = Column(Integer, primary_key=True)
+    replication = Column("replication", String)
+    iteration = Column("iteration", Integer)
+    age = Column("age", Integer)
+    rank = Column("rank", Integer)
+    seniority = Column("seniority", Integer)
+    unit = Column("unit", String)
+    quality = Column("quality", Double)
+    ideology = Column("ideology", Double)
+    uquality = Column("uquality", Double)
+    params_ideo = Column("params_ideo", Double)
+    params_qual = Column("params_qual", Double)
+    params_sen = Column("params_sen", Double)
+    utility = Column("utility", Double)
+    risk = Column("risk", Double)
+    constraints = Column("constraints", String)
+    ruler_ideology = Column("ruler_ideology", Double);
+
+
 class Simulation(object):
     def __init__(self):
         pass
@@ -386,9 +408,8 @@ class Simulation(object):
             self.history[it] = deepcopy(self.army)
             it += 1
 
-    def to_csv(self, replication):
-        myfile = csv.writer(open(self.filename, 'wb'))
-
+    def parse(self, replication):
+        self.parsed_data = []
         R = self.R
 
         for i in range(1, R):
@@ -397,64 +418,41 @@ class Simulation(object):
             for j in sim.units:
                 iteration = sim.data[j].report()
 
-                current_row = [replication,
-                               i,
-                               iteration['age'],
-                               iteration['rank'],
-                               iteration['seniority'],
-                               "".join(str(x) for x in iteration['unit']),
-                               iteration['quality'],
-                               iteration['ideology'],
-                               sim.uquality[j],
-                               sim["Ruler"].parameters["ideology"],
-                               sim["Ruler"].parameters["quality"],
-                               sim["Ruler"].parameters["seniority"],
-                               sim["Ruler"].utility["internal"],
-                               sim["Ruler"].utility["external"],
-                               risk,
-                               self.ordered,
-                               sim["Ruler"].ideology]
-                myfile.writerow(current_row)
-        print 'File successfully written!'
+                current_row = {"replication": replication,
+                               "iteration": i,
+                               "age": iteration['age'],
+                               "rank": iteration['rank'],
+                               "seniority": iteration['seniority'],
+                               "unit": "".join(str(x) for x in iteration['unit']),
+                               "quality": iteration['quality'],
+                               "ideology": iteration['ideology'],
+                               "uquality": sim.uquality[j],
+                               "params_ideo": sim["Ruler"].parameters["ideology"],
+                               "params_quality": sim["Ruler"].parameters["quality"],
+                               "params_sen": sim["Ruler"].parameters["seniority"],
+                               "utility": sim["Ruler"].utility["external"],
+                               "risk": risk,
+                               "constraints": self.ordered,
+                               "ruler_ideology": sim["Ruler"].ideology}
+                                                              
+                self.parsed_data.append(current_row)
 
+    def connect_db(self):        
 
-    def newtable(self, database):
-        conn = psycopg2.connect(database=database)
-        cur = conn.cursor()
+        dbdata = {'drivername': 'postgres',
+                  'host': 'localhost',
+                  'port': '5432',
+                  'username': 'gonzalorivero',
+                  'password': '',
+                  'database': 'promotions'}
 
-        cur.execute(
-            """
-            DROP TABLE IF EXISTS "simp";
-            CREATE TABLE "simp" (
-            REPLICATION varchar,
-            ITERATION integer,
-            AGE integer,
-            RANK integer,
-            SENIORITY integer,
-            UNIT varchar,
-            QUALITY double precision,
-            IDEOLOGY double precision,
-            UQUALITY double precision,
-            WHICH_FACTION integer,
-            FORCE_FACTION double precision,
-            PARAMS_IDEO double precision,
-            PARAMS_QUAL double precision,
-            PARAMS_SEN double precision,
-            UTILITY_INT double precision,
-            UTILITY_EXT double precision,
-            RISK double precision,
-            CONSTRAINTS varchar,
-            RULER_IDEOLOGY double precision);
-            """
-        )
-        conn.commit()
-        cur.close()
-        conn.close()
-
-    def to_table(self):
-        conn = psycopg2.connect(database="promotions")
-        cur = conn.cursor()
-        cur.execute('COPY "simp" FROM %s CSV;', [str(self.filename)])
-        conn.commit()
-        cur.close()
-        conn.close()
+        DBase = declarative_base()
+        engine = create_engine(engine.url.URL(**dbdata))
+        DBase.metadata.bind = engine
+        DBSession = sessionmaker()
+        self.dbsession = DBSession(bind=engine)
+    
+    def write_to_table(self):
+        newcases = [DataTable(**i) for i in self.parsed_data]
+        self.dbsession.add_all(newcases)
+        self.dbsession.commit()
