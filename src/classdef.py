@@ -1,12 +1,16 @@
 #! /usr/bin/python
 
-""" MAIN CLASSES """
+'''
+Description: Main objects for the simulation
+Author: Gonzalo Rivero
+Date: 28-Jan-2015 22:03
+'''
+
 import itertools
 import random
 from copy import deepcopy
 import psycopg2
 import numpy as np
-from igraph import Graph
 import csv
 from helpers import *
 
@@ -47,6 +51,7 @@ class Soldier(object):
                 'seniority': self.seniority})
 
     def pass_time(self, topage):
+        """ Move time one period. If junior, kill with probability p """
         self.age += 1
         self.seniority += 1
         if self.age > topage:
@@ -64,7 +69,7 @@ class Soldier(object):
             return(False)
 
     def is_candidate(self, openrank, openunit, topage, ordered, slack=1):
-
+        """ Is a candidate for promotion given an open position? """
         def _possible_superiors(code):
             out = []
             while len(code) > 1:
@@ -93,6 +98,7 @@ class Soldier(object):
 
 class Ruler(object):
     """ The ruler """
+
     def __init__(self, ideology, params, utility):
         for k in params.keys():
             params[k] = truncate(params[k], 0, 10)
@@ -108,48 +114,15 @@ class Ruler(object):
         return chars
 
     def update(self, newparams):
-        # for k in newparams.keys():
-        #     newparams[k] = truncate(newparams[k], 0, 10)
         self.parameters = newparams
 
-    def adapt(self, varrisk, fix):
-        pp = (self.parameters["ideology"],
-              self.parameters["quality"],
-              self.parameters["seniority"])
-
-        self.history["risk"].append(varrisk)
-        self.history["T"] += 1
-        
-        rdir = np.random.uniform(-1, 1, len(pp))
-
-        if (self.history["T"] is 1):
-            odir = list(rdir)
-        else:
-            odir = self.history["direction"][-1]
-
-        step = 0.1
-        rdir = map(lambda x: x*step, rdir/np.linalg.norm(rdir))
-        if varrisk <= 0:
-            rdir = odir
-        else:
-            rdir = [abs(rdir[i])*-1*np.sign(odir[i]) for i in range(len(pp))]
-
-        nvector = [pp[i] + rdir[i] for i in range(len(pp))]
-        newvals = {"ideology": nvector[0],
-                   "quality": nvector[1],
-                   "seniority": nvector[2]}
-        if fix:
-            if isinstance(fix, basestring):
-                newvals[fix] = 0
-            else:
-                for i in fix:
-                    newvals[i] = 0
-        self.history["direction"].append(rdir)
-        self.update(newvals)
+    def adapt(self):
+        """ Do not adapt """
+        self.update(self.parameters) 
 
 
 class Army(Soldier):
-    """ An ordered collection of soldiers """
+    """ An ordered collection of soldiers with a ruler """
     def __init__(self, number_units, unit_size, top_rank, top_age, ruler):
         self.number_units = number_units
         self.unit_size = unit_size
@@ -165,6 +138,10 @@ class Army(Soldier):
         self.urisk = 0
 
     def populate(self):
+        """
+        Fill positions in the army: Challenge is to fill with seniors 
+        being older than juniors
+        """
         for unit in self.units:
             rr = self.unit_to_rank(unit)
             refbase = (self.top_rank + 1) - rr
@@ -313,31 +290,6 @@ class Army(Soldier):
                     openpos = sorted(openpos, key=lambda x: self.unit_to_rank(idx),
                                      reverse=True)
 
-    def network(self):
-        def _make_link(i, j):
-            if i - j <= 0.75:
-                out = 1
-            else:
-                out = 0
-            return out
-            diff = np.exp(-3.*(abs(i - j)))
-            return np.random.binomial(1, diff)
-        tr = self.number_units
-        nw = np.zeros((tr, tr), int)
-        gg = self.get_rank(self.top_rank)
-        for i in range(len(gg)):
-            for j in range(i):
-                if i is j:
-                    nw[i, j] = 0
-                else:
-                    if _make_link(self[gg[i]].ideology, self[gg[j]].ideology) is 1:
-                        nw[i, j], nw[j, i] = 1, 1
-                    else:
-                        nw[i, j], nw[j, i] = 0, 0
-        g = Graph.Adjacency(nw.tolist()).as_undirected()
-        g.vs["label"] = range(self.number_units)
-        return g
-
     def pass_time(self):
         for i in self.units:
             if self.data[i]:
@@ -359,6 +311,7 @@ class Army(Soldier):
             self.data[mia] = Soldier(1, ss, aa, qq, ii, mia)
 
     def test(self):
+        """ Check the structure of the military """
         # No empty position
         tests = dict.fromkeys(["novacancies", "allalive",
                                "rconsistent", "uconsistent", "nodupes"])
@@ -385,32 +338,13 @@ class Army(Soldier):
             self.pquality[i] = self.uquality[i]/ \
                                (self.data[i].rank*self.data[i].seniority)
 
-    def get_factions(self):
-        nn = self.network()
-        nc = nn.clusters()
-        tmp_factions = dict.fromkeys([i for i in range(len(nc))])
-        for i in tmp_factions.keys():
-            idx = [(nn.vs["label"][sold],) for sold in nc[i]]
-            tmp_factions[i] = (idx, sum(self.uquality[uu] for uu in idx))
-        ## Format for class
-        for i in tmp_factions.keys():
-            for j in tmp_factions[i][0]:
-                self.factions[j] = (i, tmp_factions[i][1])
-
     def external_risk(self):
         extval = np.mean([self.pquality[i] for i in self.get_rank(self.top_rank)])
         return 1.0 - extval
 
-    def above_coup(self):
-        factions = {k: 0 for k in range(self.top_rank)}
-        for i, j in self.factions.values():
-            factions[i] += j
-        return herfindahl(factions.values())
-
     def risk(self):
         uu = self["Ruler"].utility
-        urisk = uu["internal"]*self.above_coup() + \
-                uu["external"]*self.external_risk()
+        urisk = uu["external"]*self.external_risk()
         return urisk
 
     def run_promotion(self, ordered):
@@ -419,8 +353,6 @@ class Army(Soldier):
         self.pass_time()
         self.recruit_soldiers()
         self.get_quality()
-        self.get_factions()
-        # self.test()
 
 
 class Simulation(object):
@@ -464,11 +396,6 @@ class Simulation(object):
             risk = sim.risk()
             for j in sim.units:
                 iteration = sim.data[j].report()
-                ## Assign none to non-generals factions
-                if len(str(j)) is 1:
-                    ff0, ff1 = sim.factions[j][0], sim.factions[j][1]
-                else:
-                    ff0, ff1 = None, None
 
                 current_row = [replication,
                                i,
@@ -479,8 +406,6 @@ class Simulation(object):
                                iteration['quality'],
                                iteration['ideology'],
                                sim.uquality[j],
-                               ff0,
-                               ff1,
                                sim["Ruler"].parameters["ideology"],
                                sim["Ruler"].parameters["quality"],
                                sim["Ruler"].parameters["seniority"],
