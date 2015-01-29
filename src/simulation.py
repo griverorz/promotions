@@ -9,10 +9,11 @@ import getopt
 import sys
 from classdef import *
 
+
 def main(argv):
     R = 500
-    internal = 0.0
-    external = 1.0
+    internal = .5
+    external = .5
 
     try:
         opts, args = getopt.getopt(argv, 'r:i:e')
@@ -20,7 +21,7 @@ def main(argv):
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-r':
-            R = int(arg) 
+            R = int(arg)
         if opt == '-i':
             internal = float(arg) 
         if opt == '-e':
@@ -34,7 +35,7 @@ def main(argv):
             params = {'ideology': r, 'quality': s, 'seniority': 0}
             utility = {'internal': internal, 'external': external}
             leonidas = Ruler(0.75, params, utility)
-            sparta = Army(10, 3, 3, 15, leonidas)
+            sparta = Army(3, 3, 3, 15, leonidas)
             sparta.populate()
             sparta.get_quality()
             sparta.get_factions()
@@ -43,7 +44,7 @@ def main(argv):
             for oo in [True, False]:
                 print 'Inits: {}, Ordered: {}'.format(params, oo)
                 fname = baseloc+'sim_'+str(oo)+'_'+str(s)+'.csv'
-                sargs = {'R':100, 'ordered':True, 'fixed':'seniority'}
+                sargs = {'R':R, 'ordered':True, 'fixed':'seniority'}
                 simp.populate(sparta, fname, sargs)
                 simp.run()
                 simp.to_csv(str(r)+str(s))
