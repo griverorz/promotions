@@ -22,14 +22,11 @@ def main(argv):
     for opt, arg in opts:
         if opt == '-r':
             R = int(arg)
-        if opt == '-i':
-            internal = float(arg) 
         if opt == '-e':
             external = float(arg)
 
     simp = Simulation()
-    simp.newtable('promotions')
-    baseloc = '/Users/gonzalorivero/Documents/wip/promotions/dta/'
+    simp.connect_db()
     for s in [0.0, 10.0]:
         for r in [0.0, 10.0]:
             params = {'ideology': r, 'quality': s, 'seniority': 0}
@@ -38,17 +35,15 @@ def main(argv):
             sparta = Army(3, 3, 3, 15, leonidas)
             sparta.populate()
             sparta.get_quality()
-            sparta.get_factions()
 
             print 'Replication {}-{}'.format(r, s)
             for oo in [True, False]:
                 print 'Inits: {}, Ordered: {}'.format(params, oo)
-                fname = baseloc+'sim_'+str(oo)+'_'+str(s)+'.csv'
                 sargs = {'R':R, 'ordered':True, 'fixed':'seniority'}
-                simp.populate(sparta, fname, sargs)
+                simp.populate(sparta, sargs)
                 simp.run()
-                simp.to_csv(str(r)+str(s))
-                simp.to_table()
+                simp.parse(str(s)+str(r))
+                simp.write_to_table()
 
 if __name__ == '__main__':
     main(sys.argv[1:])

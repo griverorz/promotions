@@ -11,8 +11,11 @@ import random
 from copy import deepcopy
 import numpy as np
 from helpers import *
+import json
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.engine import url
+from sql_tables import DataTable
 from sqlalchemy import create_engine
-from sqlalchemy import Column, Integer, String, Double
 
 class Soldier(object):
     """ A soldier """
@@ -354,61 +357,33 @@ class Army(Soldier):
         self.get_quality()
 
 
-class DataTable(DBase):
-    """ DB of simulations """
-    __tablename__ = "promotions"
-
-    id = Column(Integer, primary_key=True)
-    replication = Column("replication", String)
-    iteration = Column("iteration", Integer)
-    age = Column("age", Integer)
-    rank = Column("rank", Integer)
-    seniority = Column("seniority", Integer)
-    unit = Column("unit", String)
-    quality = Column("quality", Double)
-    ideology = Column("ideology", Double)
-    uquality = Column("uquality", Double)
-    params_ideo = Column("params_ideo", Double)
-    params_qual = Column("params_qual", Double)
-    params_sen = Column("params_sen", Double)
-    utility = Column("utility", Double)
-    risk = Column("risk", Double)
-    constraints = Column("constraints", String)
-    ruler_ideology = Column("ruler_ideology", Double);
-
 
 class Simulation(object):
     def __init__(self):
         pass
 
-    def populate(self, army, filename, args):
+    def populate(self, army, args):
         self.army = army
         self.R = args["R"]
         self.ordered = args["ordered"]
         self.fixed = args["fixed"]
         self.history = dict.fromkeys(range(self.R))
         self.history[0] = deepcopy(self.army)
-        self.filename = filename
 
     def run(self):
         it = 1
-        risk_var = 0
 
         while it < self.R:
             if it % 500 is 0:
                 print "Iteration {}".format(it)
 
-            risk0 = self.army.risk()
-
             self.army.run_promotion(self.ordered)
-            self.army["Ruler"].adapt(risk_var, fix=self.fixed)
-
-            risk_var = float(self.army.risk() - risk0)
+            self.army["Ruler"].adapt()
 
             self.history[it] = deepcopy(self.army)
             it += 1
 
-    def parse(self, replication):
+    def parse(self, replication): 
         self.parsed_data = []
         R = self.R
 
@@ -428,7 +403,7 @@ class Simulation(object):
                                "ideology": iteration['ideology'],
                                "uquality": sim.uquality[j],
                                "params_ideo": sim["Ruler"].parameters["ideology"],
-                               "params_quality": sim["Ruler"].parameters["quality"],
+                               "params_qual": sim["Ruler"].parameters["quality"],
                                "params_sen": sim["Ruler"].parameters["seniority"],
                                "utility": sim["Ruler"].utility["external"],
                                "risk": risk,
@@ -437,21 +412,14 @@ class Simulation(object):
                                                               
                 self.parsed_data.append(current_row)
 
-    def connect_db(self):        
-
-        dbdata = {'drivername': 'postgres',
-                  'host': 'localhost',
-                  'port': '5432',
-                  'username': 'gonzalorivero',
-                  'password': '',
-                  'database': 'promotions'}
-
-        DBase = declarative_base()
-        engine = create_engine(engine.url.URL(**dbdata))
-        DBase.metadata.bind = engine
+                
+    def connect_db(self):
+        dbdata = json.loads(open("sql_data.json").read())
+        engine = create_engine(url.URL(**dbdata))
         DBSession = sessionmaker()
         self.dbsession = DBSession(bind=engine)
-    
+
+        
     def write_to_table(self):
         newcases = [DataTable(**i) for i in self.parsed_data]
         self.dbsession.add_all(newcases)
