@@ -9,6 +9,9 @@ import getopt
 import sys
 from classdef import *
 
+def usage():
+    print "python -r (# replications) -e (0-1 weight on external)\n"
+    print 'Usage: '+sys.argv[0]+' -i <file1> [option]'
 
 def main(argv):
     R = 500
@@ -16,14 +19,15 @@ def main(argv):
     external = .5
 
     try:
-        opts, args = getopt.getopt(argv, 'r:i:e')
+        opts, args = getopt.getopt(argv, 'h:r')
     except getopt.GetoptError:
         sys.exit(2)
     for opt, arg in opts:
-        if opt == '-r':
+        if opt in ('-h', '--help'):
+            usage()
+            sys.exit(2)
+        if opt in ('-r', '-replications'):
             R = int(arg)
-        if opt == '-e':
-            external = float(arg)
 
     simp = Simulation()
     simp.connect_db()
@@ -42,7 +46,7 @@ def main(argv):
                 sargs = {'R':R, 'ordered':True, 'fixed':'seniority'}
                 simp.populate(sparta, sargs)
                 simp.run()
-                simp.parse(str(s)+str(r))
+                simp.parse(str(r)+str(s))
                 simp.write_to_table()
 
 if __name__ == '__main__':

@@ -31,7 +31,6 @@ class Soldier(object):
         self.ideology = ideology
         self.unit = unit
         self.alive = True
-        self.utility = (self.age - self.rank)**2*self.quality*self.seniority
 
     def __str__(self):
         chars = 'Rank: {}, \nSeniority: {}, \nAge: {}, \nQuality: {}, \nIdeology: {}'.\
@@ -102,8 +101,6 @@ class Ruler(object):
     """ The ruler """
 
     def __init__(self, ideology, params, utility):
-        for k in params.keys():
-            params[k] = truncate(params[k], 0, 10)
         self.ideology = ideology
         self.parameters = params
         self.utility = utility
@@ -138,7 +135,7 @@ class Army(Soldier):
         self.pquality = dict.fromkeys(self.units)
         self.factions = dict.fromkeys(self.get_rank(self.top_rank))
         self.urisk = 0
-
+        
     def populate(self):
         """
         Fill positions in the army: Challenge is to fill with seniors 
@@ -150,8 +147,7 @@ class Army(Soldier):
             refscale = self.top_age - 1
             aa = int(round(np.random.beta(rr, refbase, 1) * refscale + 1))
             ss = random.choice(range(min(aa, rr), max(aa, rr) + 1))
-            qq = self.fill_quality()
-            ii = self.fill_ideology()
+            qq, ii = self.fill_quality_ideology()
             self.data[unit] = Soldier(rr, ss, aa, qq, ii, unit)
 
     def __str__(self):
@@ -176,11 +172,9 @@ class Army(Soldier):
             if who == soldier:
                 return(unit)
 
-    def fill_quality(self):
-        return float(np.random.beta(1, 1, 1))
-
-    def fill_ideology(self):
-        return 2*float(np.random.beta(3, 3, 1)) - 1
+    def fill_quality_ideology(self):
+        """ Uniform """
+        return np.random.dirichlet((2, 3), 1).tolist()[0]
 
     def get_subordinates(self, unit):
         cand = [unit == i[0:len(unit)] for i in self.units]
@@ -268,8 +262,7 @@ class Army(Soldier):
                 rr = self.unit_to_rank(toreplace)
                 aa = self.top_age - 1
                 ss = 0
-                qq = self.fill_quality()
-                ii = self.fill_ideology()
+                qq, ii = self.fill_quality_ideology()
                 self.data[toreplace] = Soldier(rr, ss, aa, qq, ii, toreplace)
 
                 openpos.pop(0)
@@ -308,8 +301,7 @@ class Army(Soldier):
             refscale = self.top_age - 1
             aa = int(round(np.random.beta(1, refbase, 1) * refscale + 1))
             ss = 1
-            qq = self.fill_quality()
-            ii = self.fill_ideology()
+            qq, ii = self.fill_quality_ideology()
             self.data[mia] = Soldier(1, ss, aa, qq, ii, mia)
 
     def test(self):

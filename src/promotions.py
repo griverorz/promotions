@@ -2,27 +2,55 @@
 # @griverorz
 # 11Aug2014
 
-import psycopg2
 import pandas as pd
-import matplotlib.pylab as plt
+import matplotlib.pyplot as plt
 import itertools
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.engine import url
+from sql_tables import DataTable
+from sqlalchemy import create_engine
+from sqlalchemy import func
+from sqlalchemy.orm import mapper
+from sqlalchemy.ext.declarative import declarative_base
+import json
 
-database='promotions'
-conn = psycopg2.connect(database=database)
+dbdata = json.loads(open("sql_data.json").read())
+engine = create_engine(url.URL(**dbdata))
+DBase = declarative_base(engine)
+
+class Promotions(DBase):
+    __tablename__ = 'promotions'
+    __table_args__ = {'autoload':True}
+
+    
+def load_session(DBase):
+    """"""
+    metadata = DBase.metadata
+    session = sessionmaker(bind=engine)
+    dbsession = session()
+    return dbsession
+
+dbsession = load_session(DBase)
 
 ############################# ideology ####################
-cur = conn.cursor()
+mtable = (dbsession.query(Promotions.replication,
+                          func.avg(Promotions.ideology),
+                          Promotions.iteration,
+                          Promotions.rank,
+                          Promotions.constraints,
+                          Promotions.ruler_ideology)
+          .group_by(
+              Promotions.replication,
+              Promotions.iteration,
+              Promotions.rank,
+              Promotions.constraints,
+              Promotions.ruler_ideology))
 
-cur.execute(
-    "select replication, avg(ideology) as ideology, iteration, rank, \
-        constraints, ruler_ideology \
-    from simp \
-    group by replication, iteration, rank, constraints, ruler_ideology, \
-    	  ruler_ideology;")
+ideology = pd.DataFrame(mtable.all(),
+                        columns=["replication", "ideology",
+                                 "iteration", "rank",
+                                 "constraints", "ruler_ideology"])
 
-ideology = cur.fetchall()
-ideology = pd.DataFrame(ideology)
-ideology.columns = [i[0] for i in cur.description]
 
 ideology = ideology.sort(["iteration", "replication"])
 fig, axes = plt.subplots(4, 3, sharex='col')
@@ -41,14 +69,23 @@ for i, j in loc:
     axes[i, j].set_title("Rank {}, Replication {}".format(ranks[j], reps[i]))
 
 #################### quality ####################
-cur.execute(
-    "select replication, avg(quality) as quality, iteration, rank, \
-        constraints, ruler_ideology \
-    from simp \
-    group by replication, iteration, rank, constraints, ruler_ideology;")
-quality = cur.fetchall()
-quality = pd.DataFrame(quality)
-quality.columns = [i[0] for i in cur.description]
+mtable = dbsession.query(dtable.c.replication,
+                       func.avg(dtable.c.quality),
+                       dtable.c.iteration,
+                       dtable.c.rank,
+                       dtable.c.constraints,
+                       dtable.c.ruler_ideology).group_by(
+                           dtable.c.replication,
+                           dtable.c.iteration,
+                           dtable.c.rank,
+                           dtable.c.constraints,
+                           dtable.c.ruler_ideology)
+
+
+quality = pd.DataFrame(mtable.all(),
+                        columns=["replication", "quality",
+                                 "iteration", "rank",
+                                 "constraints", "ruler_ideology"])
 
 quality = quality.sort(["iteration", "replication"])
 fig, axes = plt.subplots(4, 3, sharex='col')
@@ -67,17 +104,19 @@ for i, j in loc:
     axes[i, j].set_title("Rank {}, Replication {}".format(ranks[j], reps[i]))
 
 #################### params ####################
-cur = conn.cursor()
-cur.execute(
-"select replication, avg(params_ideo) as pideo, \
-        avg(params_qual) as pqual, \
-        iteration, \
-        constraints, ruler_ideology \
-from simp \
-group by replication, iteration, constraints, ruler_ideology \
-order by iteration;")
-params = cur.fetchall()
-params = pd.DataFrame(params)
-params.columns = [i[0] for i in cur.description]
 
-conn.close()
+mtable = dbsession.query(dtable.c.replication,
+                       func.avg(dtable.c.params_ideo),
+                       dtable.c.iteration,
+                       dtable.c.constraints,
+                       dtable.c.ruler_ideology).group_by(
+                           dtable.c.replication,
+                           dtable.c.iteration,
+                           dtable.c.constraints,
+                           dtable.c.ruler_ideology)
+
+
+params = pd.DataFrame(mtable.all(),
+                        columns=["replication", "params_ideo",
+                                 "iteration",
+                                 "constraints", "ruler_ideology"])
