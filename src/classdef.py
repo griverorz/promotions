@@ -14,7 +14,7 @@ from helpers import *
 import json
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import url
-from sql_tables import DataTable
+from sql_tables import SimData, SimParams
 from sqlalchemy import create_engine
 
 class Soldier(object):
@@ -351,8 +351,10 @@ class Army(Soldier):
 
 
 class Simulation(object):
+    id_generator = itertools.count(1)
+    
     def __init__(self):
-        pass
+        self.id = next(self.id_generator)
 
     def populate(self, army, args):
         self.army = army
@@ -375,18 +377,28 @@ class Simulation(object):
             self.history[it] = deepcopy(self.army)
             it += 1
 
-    def parse(self, replication): 
+    def parse_simulation(self):
+        simparams = {"id": self.id,
+                     "params_ideo": self.army["Ruler"].parameters["ideology"],
+                     "params_qual": self.army["Ruler"].parameters["quality"],
+                     "params_sen": self.army["Ruler"].parameters["seniority"],
+                     "utility": self.army["Ruler"].utility["external"],
+                     "constraints": self.ordered,
+                     "ruler_ideology": self.army["Ruler"].ideology}
+        self.simparams = simparams
+        
+    def parse_history(self): 
         self.parsed_data = []
         R = self.R
-
+        
         for i in range(1, R):
             sim = self.history[i]
             risk = sim.risk()
             for j in sim.units:
                 iteration = sim.data[j].report()
 
-                current_row = {"replication": replication,
-                               "iteration": i,
+                current_row = {"iteration": i,
+                               "replication": self.id,
                                "age": iteration['age'],
                                "rank": iteration['rank'],
                                "seniority": iteration['seniority'],
@@ -394,17 +406,11 @@ class Simulation(object):
                                "quality": iteration['quality'],
                                "ideology": iteration['ideology'],
                                "uquality": sim.uquality[j],
-                               "params_ideo": sim["Ruler"].parameters["ideology"],
-                               "params_qual": sim["Ruler"].parameters["quality"],
-                               "params_sen": sim["Ruler"].parameters["seniority"],
-                               "utility": sim["Ruler"].utility["external"],
-                               "risk": risk,
-                               "constraints": self.ordered,
-                               "ruler_ideology": sim["Ruler"].ideology}
+                               "risk": risk}
                                                               
                 self.parsed_data.append(current_row)
 
-                
+
     def connect_db(self):
         dbdata = json.loads(open("sql_data.json").read())
         engine = create_engine(url.URL(**dbdata))
@@ -413,6 +419,18 @@ class Simulation(object):
 
         
     def write_to_table(self):
-        newcases = [DataTable(**i) for i in self.parsed_data]
-        self.dbsession.add_all(newcases)
+        self.connect_db()
+        """ Write simulation parameters """
+        newparams = SimParams(**self.simparams)
+        self.dbsession.add(newparams)
         self.dbsession.commit()
+        """ Write simulation data """        
+        newcases = [SimData(**i) for i in self.parsed_data]
+        self.dbsession.add_all(newcases) 
+        self.dbsession.commit()
+        self.dbsession.flush()
+
+    def write(self):
+        self.parse_simulation()
+        self.parse_history()
+        self.write_to_table()
