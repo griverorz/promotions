@@ -7,20 +7,16 @@ import matplotlib.pyplot as plt
 import itertools
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import url
-from sql_tables import DataTable
 from sqlalchemy import create_engine
 from sqlalchemy import func
 from sqlalchemy.orm import mapper
 from sqlalchemy.ext.declarative import declarative_base
+from sql_tables import SimData, SimParams
 import json
 
 dbdata = json.loads(open("sql_data.json").read())
 engine = create_engine(url.URL(**dbdata))
 DBase = declarative_base(engine)
-
-class Promotions(DBase):
-    __tablename__ = 'promotions'
-    __table_args__ = {'autoload':True}
 
     
 def load_session(DBase):

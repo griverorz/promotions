@@ -29,8 +29,6 @@ def main(argv):
         if opt in ('-r', '-replications'):
             R = int(arg)
 
-    simp = Simulation()
-    simp.connect_db()
     for s in [0.0, 10.0]:
         for r in [0.0, 10.0]:
             params = {'ideology': r, 'quality': s, 'seniority': 0}
@@ -40,14 +38,14 @@ def main(argv):
             sparta.populate()
             sparta.get_quality()
 
-            print 'Replication {}-{}'.format(r, s)
+            print 'Replication with ideology {} and quality {}'.format(r, s)
             for oo in [True, False]:
                 print 'Inits: {}, Ordered: {}'.format(params, oo)
                 sargs = {'R':R, 'ordered':True, 'fixed':'seniority'}
+                simp = Simulation()
                 simp.populate(sparta, sargs)
                 simp.run()
-                simp.parse(str(r)+str(s))
-                simp.write_to_table()
+                simp.write()
 
 if __name__ == '__main__':
     main(sys.argv[1:])
