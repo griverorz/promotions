@@ -10,16 +10,14 @@ import sys
 from classdef import *
 
 def usage():
-    print "python -r (# replications) -e (0-1 weight on external)\n"
-    print 'Usage: '+sys.argv[0]+' -i <file1> [option]'
+    print 'Usage: python '+sys.argv[0]+' -r replications'
 
 def main(argv):
     R = 500
     internal = .5
     external = .5
-
     try:
-        opts, args = getopt.getopt(argv, 'h:r')
+        opts, args = getopt.getopt(argv, "hr:", ["help", "reps="])
     except getopt.GetoptError:
         sys.exit(2)
     for opt, arg in opts:
@@ -28,7 +26,7 @@ def main(argv):
             sys.exit(2)
         if opt in ('-r', '-replications'):
             R = int(arg)
-
+            
     for s in [0.0, 10.0]:
         for r in [0.0, 10.0]:
             params = {'ideology': r, 'quality': s, 'seniority': 0}
