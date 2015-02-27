@@ -93,6 +93,14 @@ class Soldier(object):
         isc = _candidate(openrank, topage, ordered, slack) and is_sub
         return isc
 
+    def mutate(self):
+        prob = np.random.binomial(1, 0.05, 1)
+        if prob is 1:
+            if self.ideology < 0.5:
+                self.ideology = max(0, self.ideology - .2)
+            else:
+                self.ideology = min(self.ideology + .2, 1)
+        
     def kill(self):
         self.alive = False
 
@@ -174,7 +182,7 @@ class Army(Soldier):
 
     def fill_quality_ideology(self):
         """ Uniform """
-        return np.random.dirichlet((2, 3), 1).tolist()[0]
+        return np.random.dirichlet((2, 2), 1).tolist()[0]
 
     def get_subordinates(self, unit):
         cand = [unit == i[0:len(unit)] for i in self.units]
@@ -290,6 +298,11 @@ class Army(Soldier):
             if self.data[i]:
                 Soldier.pass_time(self.data[i], self.top_age)
 
+    def mutate(self):
+        for i in self.units:
+            if self.data[i]:
+                Soldier.mutate()
+
     def recruit_soldiers(self):
         dead_soldiers = []
         dead_soldiers = filter(lambda x:
@@ -344,6 +357,7 @@ class Army(Soldier):
     def run_promotion(self, ordered):
         openpos = self.up_for_retirement()
         self.promote(openpos, ordered)
+        # self.mutate()
         self.pass_time()
         self.recruit_soldiers()
         self.get_quality()
@@ -417,14 +431,13 @@ class Simulation(object):
         DBSession = sessionmaker()
         self.dbsession = DBSession(bind=engine)
 
-        
     def write_to_table(self):
         self.connect_db()
         """ Write simulation parameters """
         newparams = SimParams(**self.simparams)
         self.dbsession.add(newparams)
         self.dbsession.commit()
-        """ Write simulation data """        
+        """ Write simulation data """
         newcases = [SimData(**i) for i in self.parsed_data]
         self.dbsession.add_all(newcases) 
         self.dbsession.commit()
