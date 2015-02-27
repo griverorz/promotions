@@ -3,13 +3,12 @@
 # 11Aug2014
 
 import pandas as pd
-import matplotlib.pyplot as plt
+from pylab import *
 import itertools
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import url
 from sqlalchemy import create_engine
 from sqlalchemy import func
-from sqlalchemy.orm import mapper
 from sqlalchemy.ext.declarative import declarative_base
 from sql_tables import SimData, SimParams
 import json
@@ -29,27 +28,20 @@ def load_session(DBase):
 dbsession = load_session(DBase)
 
 ############################# ideology ####################
-mtable = (dbsession.query(Promotions.replication,
-                          func.avg(Promotions.ideology),
-                          Promotions.iteration,
-                          Promotions.rank,
-                          Promotions.constraints,
-                          Promotions.ruler_ideology)
+mtable = (dbsession.query(SimData.replication,
+                          func.avg(SimData.ideology).label("ideology"),
+                          SimData.iteration,
+                          SimData.rank)
           .group_by(
-              Promotions.replication,
-              Promotions.iteration,
-              Promotions.rank,
-              Promotions.constraints,
-              Promotions.ruler_ideology))
+              SimData.replication,
+              SimData.iteration,
+              SimData.rank))
 
-ideology = pd.DataFrame(mtable.all(),
-                        columns=["replication", "ideology",
-                                 "iteration", "rank",
-                                 "constraints", "ruler_ideology"])
-
+colnames = [i['name'] for i in mtable.column_descriptions]
+ideology = pd.DataFrame(mtable.all(), columns=colnames)
 
 ideology = ideology.sort(["iteration", "replication"])
-fig, axes = plt.subplots(4, 3, sharex='col')
+fig, axes = plt.subplots(4, 3, sharex=True, sharey=True) 
 
 loc = itertools.product(*[range(len(set(ideology['replication']))), 
                           range(3)])
@@ -63,28 +55,24 @@ for i, j in loc:
                     ideology["ideology"][ideology["rank"] == ranks[j]]
                     [ideology["replication"] == reps[i]])
     axes[i, j].set_title("Rank {}, Replication {}".format(ranks[j], reps[i]))
+    plt.ylim(0, 1)
 
 #################### quality ####################
-mtable = dbsession.query(dtable.c.replication,
-                       func.avg(dtable.c.quality),
-                       dtable.c.iteration,
-                       dtable.c.rank,
-                       dtable.c.constraints,
-                       dtable.c.ruler_ideology).group_by(
-                           dtable.c.replication,
-                           dtable.c.iteration,
-                           dtable.c.rank,
-                           dtable.c.constraints,
-                           dtable.c.ruler_ideology)
 
+mtable = (dbsession.query(SimData.replication,
+                          func.avg(SimData.quality).label("quality"),
+                          SimData.iteration,
+                          SimData.rank)
+          .group_by(
+              SimData.replication,
+              SimData.iteration,
+              SimData.rank))
 
-quality = pd.DataFrame(mtable.all(),
-                        columns=["replication", "quality",
-                                 "iteration", "rank",
-                                 "constraints", "ruler_ideology"])
+colnames = [i['name'] for i in mtable.column_descriptions]
+quality = pd.DataFrame(mtable.all(), columns=colnames)
 
 quality = quality.sort(["iteration", "replication"])
-fig, axes = plt.subplots(4, 3, sharex='col')
+fig, axes = plt.subplots(4, 3, sharex=True, sharey=True)
 
 loc = itertools.product(*[range(len(set(quality['replication']))), 
                           range(3)])

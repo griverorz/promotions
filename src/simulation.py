@@ -17,9 +17,9 @@ def main(argv):
     internal = .5
     external = .5
     try:
-        opts, args = getopt.getopt(argv, "hr:", ["help", "reps="])
+        opts, args = getopt.getopt(argv, "hr:", ["help", "reps="]) 
     except getopt.GetoptError:
-        sys.exit(2)
+                sys.exit(2)
     for opt, arg in opts:
         if opt in ('-h', '--help'):
             usage()
@@ -32,12 +32,12 @@ def main(argv):
             params = {'ideology': r, 'quality': s, 'seniority': 0}
             utility = {'internal': internal, 'external': external}
             leonidas = Ruler(0.75, params, utility)
-            sparta = Army(3, 3, 3, 15, leonidas)
+            sparta = Army(4, 4, 3, 15, leonidas)
             sparta.populate()
             sparta.get_quality()
 
             print 'Replication with ideology {} and quality {}'.format(r, s)
-            for oo in [True, False]:
+            for oo in [True]:
                 print 'Inits: {}, Ordered: {}'.format(params, oo)
                 sargs = {'R':R, 'ordered':True, 'fixed':'seniority'}
                 simp = Simulation()
@@ -47,3 +47,4 @@ def main(argv):
 
 if __name__ == '__main__':
     main(sys.argv[1:])
+ 
