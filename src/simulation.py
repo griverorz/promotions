@@ -26,13 +26,13 @@ def main(argv):
             sys.exit(2)
         if opt in ('-r', '-replications'):
             R = int(arg)
-            
-    for s in [0.0, 10.0]:
-        for r in [0.0, 10.0]:
-            params = {'ideology': r, 'quality': s, 'seniority': 0}
+
+    for s in [0.1, 0.9]:
+        for r in [0.0]:
+            params = {'ideology': 10.0, 'quality': 0.0, 'seniority': 0}
             utility = {'internal': internal, 'external': external}
-            leonidas = Ruler(0.75, params, utility)
-            sparta = Army(4, 4, 3, 15, leonidas)
+            leonidas = Ruler(s, params, utility)
+            sparta = Army(4, 4, 3, 30, leonidas)
             sparta.populate()
             sparta.get_quality()
 

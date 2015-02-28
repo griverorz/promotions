@@ -120,14 +120,35 @@ class Ruler(object):
             self.parameters.values())
         return chars
 
-    def update(self, newparams):
-        self.parameters = newparams
 
-    def adapt(self):
-        """ Do not adapt """
-        self.update(self.parameters) 
+    def adapt(self, old_dir, var_risk, fix="seniority"):
 
+        pp = (self.parameters["ideology"],
+              self.parameters["quality"],
+              self.parameters["seniority"])
 
+        # creates random movement
+        if var_risk <= 0:
+            rdir = old_dir
+        else:
+            rdir = np.random.uniform(-1, 1, len(pp))
+            step = 0.5
+            rdir = map(lambda x: x*step, rdir/np.linalg.norm(rdir))
+            rdir = [abs(rdir[i])*-1*np.sign(old_dir[i]) for i in range(len(pp))]
+
+        nvector = [pp[i] + rdir[i] for i in range(len(pp))]
+        newvals = {"ideology": nvector[0],
+                   "quality": nvector[1],
+                   "seniority": nvector[2]}
+        if fix:
+            if isinstance(fix, basestring):
+                newvals[fix] = 0
+        else:
+            for i in fix:
+                newvals[i] = 0
+        self.parameters = newvals
+        return rdir
+        
 class Army(Soldier):
     """ An ordered collection of soldiers with a ruler """
     def __init__(self, number_units, unit_size, top_rank, top_age, ruler):
@@ -293,15 +314,15 @@ class Army(Soldier):
                     openpos = sorted(openpos, key=lambda x: self.unit_to_rank(idx),
                                      reverse=True)
 
-    def pass_time(self):
+    def army_pass_time(self):
         for i in self.units:
             if self.data[i]:
                 Soldier.pass_time(self.data[i], self.top_age)
-
-    def mutate(self):
-        for i in self.units:
-            if self.data[i]:
-                Soldier.mutate()
+                
+    # def mutate(self):
+    #     for i in self.units:
+    #         if self.data[i]:
+    #             Soldier.mutate()
 
     def recruit_soldiers(self):
         dead_soldiers = []
@@ -358,7 +379,7 @@ class Army(Soldier):
         openpos = self.up_for_retirement()
         self.promote(openpos, ordered)
         # self.mutate()
-        self.pass_time()
+        self.army_pass_time()
         self.recruit_soldiers()
         self.get_quality()
 
@@ -380,13 +401,20 @@ class Simulation(object):
 
     def run(self):
         it = 1
+        var_risk = 0
 
         while it < self.R:
             if it % 500 is 0:
                 print "Iteration {}".format(it)
 
+            if it is 1:
+                new_dir = list(np.random.uniform(-1, 1, 3))
+                
+            risk0 = self.army.risk()
+
             self.army.run_promotion(self.ordered)
-            self.army["Ruler"].adapt()
+            new_dir = self.army["Ruler"].adapt(new_dir, var_risk, fix="seniority")
+            var_risk = float(self.army.risk() - risk0)
 
             self.history[it] = deepcopy(self.army)
             it += 1
@@ -420,6 +448,9 @@ class Simulation(object):
                                "quality": iteration['quality'],
                                "ideology": iteration['ideology'],
                                "uquality": sim.uquality[j],
+                               "parideology": sim.data["Ruler"].parameters["ideology"],
+                               "parseniority": sim.data["Ruler"].parameters["seniority"],
+                               "parquality": sim.data["Ruler"].parameters["quality"],
                                "risk": risk}
                                                               
                 self.parsed_data.append(current_row)
@@ -442,7 +473,7 @@ class Simulation(object):
         self.dbsession.add_all(newcases) 
         self.dbsession.commit()
         self.dbsession.flush()
-
+        
     def write(self):
         self.parse_simulation()
         self.parse_history()
