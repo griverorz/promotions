@@ -120,34 +120,35 @@ class Ruler(object):
             self.parameters.values())
         return chars
 
-
-    def adapt(self, old_dir, var_risk, fix="seniority"):
-
-        pp = (self.parameters["ideology"],
-              self.parameters["quality"],
-              self.parameters["seniority"])
-
-        # creates random movement
-        if var_risk <= 0:
-            rdir = old_dir
+    def adapt(self, old_dir, var_risk, fix="seniority", adapt=True):
+        if not adapt:
+            return old_dir
         else:
-            rdir = np.random.uniform(-1, 1, len(pp))
-            step = 0.5
-            rdir = map(lambda x: x*step, rdir/np.linalg.norm(rdir))
-            rdir = [abs(rdir[i])*-1*np.sign(old_dir[i]) for i in range(len(pp))]
+            pp = (self.parameters["ideology"],
+                  self.parameters["quality"],
+                  self.parameters["seniority"])
 
-        nvector = [pp[i] + rdir[i] for i in range(len(pp))]
-        newvals = {"ideology": nvector[0],
-                   "quality": nvector[1],
-                   "seniority": nvector[2]}
-        if fix:
-            if isinstance(fix, basestring):
-                newvals[fix] = 0
-        else:
-            for i in fix:
-                newvals[i] = 0
-        self.parameters = newvals
-        return rdir
+            # creates random movement
+            if var_risk <= 0:
+                rdir = old_dir
+            else:
+                rdir = np.random.uniform(-1, 1, len(pp))
+                step = 0.1
+                rdir = map(lambda x: x*step, rdir/np.linalg.norm(rdir))
+                rdir = [abs(rdir[i])*-1*np.sign(old_dir[i]) for i in range(len(pp))]
+
+            nvector = [pp[i] + rdir[i] for i in range(len(pp))]
+            newvals = {"ideology": truncate(nvector[0], -25, 25),
+                       "quality": truncate(nvector[1], -25, 25),
+                       "seniority": truncate(nvector[2], -25, 25)}
+            if fix:
+                if isinstance(fix, basestring):
+                    newvals[fix] = 0
+            else:
+                for i in fix:
+                    newvals[i] = 0
+            self.parameters = newvals
+            return rdir
         
 class Army(Soldier):
     """ An ordered collection of soldiers with a ruler """
@@ -202,7 +203,7 @@ class Army(Soldier):
                 return(unit)
 
     def fill_quality_ideology(self):
-        """ Uniform """
+        """ uniform """
         return np.random.dirichlet((2, 2), 1).tolist()[0]
 
     def get_subordinates(self, unit):
@@ -366,13 +367,19 @@ class Army(Soldier):
             self.pquality[i] = self.uquality[i]/ \
                                (self.data[i].rank*self.data[i].seniority)
 
+    def internal_risk(self):
+        intval = np.mean([self.data[i].ideology for i in self.get_rank(self.top_rank)])
+        return np.abs(self.data['Ruler'].ideology - intval)
+
     def external_risk(self):
         extval = np.mean([self.pquality[i] for i in self.get_rank(self.top_rank)])
         return 1.0 - extval
 
     def risk(self):
         uu = self["Ruler"].utility
+        # urisk = uu["external"]*self.external_risk() + uu["internal"]*self.internal_risk()
         urisk = uu["external"]*self.external_risk()
+        # urisk = uu["internal"]*self.internal_risk()
         return urisk
 
     def run_promotion(self, ordered):
@@ -396,24 +403,24 @@ class Simulation(object):
         self.R = args["R"]
         self.ordered = args["ordered"]
         self.fixed = args["fixed"]
+        self.adapt = args["adapt"]
         self.history = dict.fromkeys(range(self.R))
         self.history[0] = deepcopy(self.army)
 
     def run(self):
         it = 1
         var_risk = 0
+        new_dir = list(np.random.uniform(-1, 1, 3))
 
         while it < self.R:
             if it % 500 is 0:
                 print "Iteration {}".format(it)
 
-            if it is 1:
-                new_dir = list(np.random.uniform(-1, 1, 3))
-                
             risk0 = self.army.risk()
 
             self.army.run_promotion(self.ordered)
-            new_dir = self.army["Ruler"].adapt(new_dir, var_risk, fix="seniority")
+            new_dir = self.army["Ruler"].adapt(new_dir, var_risk, 
+                                               fix="seniority", adapt=self.adapt)
             var_risk = float(self.army.risk() - risk0)
 
             self.history[it] = deepcopy(self.army)
@@ -426,6 +433,7 @@ class Simulation(object):
                      "params_sen": self.army["Ruler"].parameters["seniority"],
                      "utility": self.army["Ruler"].utility["external"],
                      "constraints": self.ordered,
+                     "adapt": self.adapt,
                      "ruler_ideology": self.army["Ruler"].ideology}
         self.simparams = simparams
         
