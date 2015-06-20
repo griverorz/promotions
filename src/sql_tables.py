@@ -28,6 +28,9 @@ class SimData(DBase):
     quality = Column("quality", Float)
     ideology = Column("ideology", Float)
     uquality = Column("uquality", Float)
+    parideology = Column("parideology", Float)
+    parseniority = Column("parseniority", Float)
+    parquality = Column("parquality", Float)
     risk = Column("risk", Float)
 
 
@@ -41,6 +44,7 @@ class SimParams(DBase):
     params_qual = Column("params_qual", Float)
     params_sen = Column("params_sen", Float)
     constraints = Column("constraints", String)
+    adapt = Column("adapt", String)
     ruler_ideology = Column("ruler_ideology", Float);
     utility = Column("utility", Float)
     

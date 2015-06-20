@@ -7,6 +7,7 @@ Author: @griverorz
 
 import getopt
 import sys
+import numpy as np
 from classdef import *
 
 def usage():
@@ -14,8 +15,7 @@ def usage():
 
 def main(argv):
     R = 500
-    internal = .5
-    external = .5
+
     try:
         opts, args = getopt.getopt(argv, "hr:", ["help", "reps="]) 
     except getopt.GetoptError:
@@ -27,23 +27,26 @@ def main(argv):
         if opt in ('-r', '-replications'):
             R = int(arg)
 
-    for s in [0.1, 0.9]:
-        for r in [0.0]:
-            params = {'ideology': 10.0, 'quality': 0.0, 'seniority': 0}
-            utility = {'internal': internal, 'external': external}
-            leonidas = Ruler(s, params, utility)
-            sparta = Army(4, 4, 3, 30, leonidas)
-            sparta.populate()
-            sparta.get_quality()
+    for par in np.linspace(0, 1, 11):
+        for rid in np.linspace(0, 1, 11):
+            for put in np.linspace(0, 1, 11):
 
-            print 'Replication with ideology {} and quality {}'.format(r, s)
-            for oo in [True]:
-                print 'Inits: {}, Ordered: {}'.format(params, oo)
-                sargs = {'R':R, 'ordered':True, 'fixed':'seniority'}
-                simp = Simulation()
-                simp.populate(sparta, sargs)
-                simp.run()
-                simp.write()
+                params = {'ideology': par, 'quality': (1 - par), 'seniority': 0}
+                utility = {'internal': put, 'external': (1 - put)}
+                leonidas = Ruler(rid, params, utility)
+                sparta = Army(4, 4, 3, 30, leonidas)
+                sparta.populate()
+                sparta.get_quality()
+
+                print ('Replication: internal {}, ideology {}, ruler {}'.
+                       format(utility["internal"], params["ideology"], rid))
+                for oo in [True]:
+                    # print 'Inits: {}, Ordered: {}'.format(params, oo)
+                    sargs = {'R':R, 'ordered':True, 'fixed':'seniority', 'adapt': False}
+                    simp = Simulation()
+                    simp.populate(sparta, sargs)
+                    simp.run()
+                    simp.write()
 
 if __name__ == '__main__':
     main(sys.argv[1:])
