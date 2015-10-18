@@ -1,0 +1,120 @@
+\section{Results}
+\label{sec:results}
+
+The next two figures (figures \ref{fig:ideology_low_low} and
+\ref{fig:quality_low_low}) show the evolution of the ideology and the quality
+for the officers of rank $K$ in a simulation in which the ideology of the ruler
+is set to 0 and the weight on the overall quality of the military is also set to
+0, meaning that the ruler does not pay attention to the risk associated with a
+given composition of the military when choosing a promotion rule. In the
+simulations on the left, the parameters used in the promotion to rank $K$ are
+set so that the weight in ideology is $p$ and the weight on quality is $(1-p)$
+for $p \in \{0, 0.3, 0.6, 1\}$ (top to bottom figure), and the weight on
+seniority is always 0. In the simulations on the right, the ruler changes those
+parameters freely with the aim of minimizing the overall risk he faces. The same
+structure is used for all the other figures.
+
+The results on the left are what we would have expected. The ruler manages to
+get a high command in which all its members are from an ideology close to his
+(figure~\ref{fig:ideology_low_low}) and yet he is still able to select from a
+pool of high quality candidates (figure \ref{fig:quality_low_low}) regardless of
+the parameters that the promotion rule takes. The results on the left, although
+using the same parameters, converge to different results, which point to two
+different attractors.
+
+\begin{figure}[!h]
+  \centering
+  \caption{Evolution of ideology}
+  \includegraphics[width = 14cm]{../img/ideology_ruler_low_low.png}
+  \label{fig:ideology_low_low}
+\end{figure}
+
+\begin{figure}[!h]
+  \centering
+  \caption{Evolution of quality}
+  \includegraphics[width = 14cm]{../img/quality_ruler_low_low.png}
+  \label{fig:quality_low_low}
+\end{figure}
+
+\clearpage
+
+In figures \ref{fig:ideology_low_high} and \ref{fig:quality_low_high}, the ruler
+still has an ideology of 0 but now puts full weight on the quality of the
+military. The results of the constant model reproduce what was observed before.
+The search process produces again the two attractors, and interestingly, it
+converges to them even when it has explored different combinations of ideology
+and quality (top right panel of figures \ref{fig:ideology_low_high} and
+\ref{fig:quality_low_high}).
+ 
+\begin{figure}[!h]
+  \centering
+  \caption{Evolution of ideology}
+  \includegraphics[width = 14cm]{../img/ideology_ruler_low_high.png}
+  \label{fig:ideology_low_high}
+\end{figure}
+
+\begin{figure}[!h]
+  \centering
+  \caption{Evolution of quality}
+  \includegraphics[width = 14cm]{../img/quality_ruler_low_high.png}
+  \label{fig:quality_low_high}
+\end{figure}
+
+\clearpage 
+
+If we switch the ideology of the ruler to a value 1 and repeat the same
+exercises as above (figures \ref{fig:ideology_high_low} and
+\ref{fig:quality_high_low}), we see two things happening. First, that the
+constant model switches attractor after the parameter for ideology goes above
+0.5 (compare the second and third panels on the left of the two figures). There
+is therefore some asymmetry in the model that makes the value of the promotion
+rule parameters affect more clearly and have more impact when the ideology of
+the ruler is 1 than when it is 0. The other interesting effect, is that the
+adaptive model converges to a situation in which its distribution has greater
+variance and it is centered around 0.5.
+
+\begin{figure}[!h]
+  \centering
+  \caption{Evolution of ideology}
+  \includegraphics[width = 14cm]{../img/ideology_ruler_high_low.png}
+  \label{fig:ideology_high_low}
+\end{figure}
+
+\begin{figure}[!h]
+  \centering
+  \caption{Evolution of quality}
+  \includegraphics[width = 14cm]{../img/quality_ruler_high_low.png}
+  \label{fig:quality_high_low}
+\end{figure}
+
+\clearpage 
+
+However, the most interesting results arise in intermediate scenarios when the
+ideology of the ruler and the weight he poses on the quality of the military are
+strictly between 0 and 1. In this case, a constant rule produces a clear
+factionalization of the military (second panel in figures
+\ref{fig:quality_midhigh_midhigh} and \ref{fig:quality_midhigh_midhigh}), which
+seems to be common for all cases in which the weight on quality is 0.7
+regardless of the other parameters. The adaptive model only partially reproduces
+this behavior but the factionalization result is not sustain forever. 
+
+\begin{figure}[!h]
+  \centering
+  \caption{Evolution of ideology}
+  \includegraphics[width = 14cm]{../img/ideology_ruler_midhigh_midhigh.png}
+  \label{fig:quality_midhigh_midhigh}
+\end{figure}
+
+\begin{figure}[!h]
+  \centering
+  \caption{Evolution of quality}
+  \includegraphics[width = 14cm]{../img/quality_ruler_midhigh_midhigh.png}
+  \label{fig:quality_midhigh_midhigh}
+\end{figure}
+
+\clearpage
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "promotions_paper"
+%%% End:
