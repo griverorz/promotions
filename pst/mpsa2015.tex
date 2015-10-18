@@ -1,0 +1,212 @@
+\documentclass[9pt]{beamer}
+
+\usepackage{graphicx}
+% \usepackage{subfigure}
+% \usepackage{array}
+\usepackage[latin1]{inputenc}
+\usepackage[flushleft]{threeparttable}   
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{natbib}
+\usepackage{color}
+\usepackage{chancery}
+\usepackage{tikz}
+\usepackage{bm}
+\usepackage[gen]{eurosym}
+\usepackage{pifont}
+\usepackage{fancyvrb}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{mathptmx}
+\usepackage[T1]{fontenc}
+
+% t commands                                        
+\newcommand{\firstt}[1]{$\;I(0 \leq t < 5)$}        
+\newcommand{\secondt}[1]{$\;I(5 \leq t < 10)$}      
+\newcommand{\thirdt}[1]{$\;I(10 \leq t < 15)$}      
+\newcommand{\fourtht}[1]{$\;I(15 \leq t < 20)$}     
+\newcommand{\fiftht}[1]{$\;I(t \geq 20)$}           
+
+\newcommand{\vect}[1]{\vec{#1}}
+\newcommand{\degree}{\ensuremath{^\circ}}
+\newcommand{\mix}{\multicolumn{2}{r}{}}       
+
+\usepackage{tikz}
+\tikzstyle{mybox} = [very thick, rectangle, inner sep = 10pt]
+\usetikzlibrary{arrows,positioning,automata} 
+
+\usepackage{avant}
+
+% structure 
+% \usetheme{Frankfurt}
+\setbeamertemplate{blocks}[rounded]
+\setbeamertemplate{headline}[shadow=false]
+\setbeamertemplate{footline}[infolines theme]
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize items}[triangle]
+\setbeamertemplate{enumerate items}[default]
+
+\usecolortheme{beaver}
+\definecolor{myred}{RGB}{140, 20, 20} 
+
+% font
+\usefonttheme{default}
+% \usepackage{fontspec}
+% \setsansfont{Verdana}
+
+\title{The Internal Dynamics of the Military and Political Stability}
+\subtitle{Social Unrest and Military Coups} 
+\author{Gonzalo Rivero}
+\institute{YouGov America} 
+\date{}
+
+\begin{document} 
+	
+\begin{frame}[plain]
+  \titlepage  
+\end{frame}
+
+\section{Introduction}
+\subsection{}
+
+\begin{frame}
+  \frametitle{Motivating questions} 
+  \begin{itemize}
+  \item Political stability depends on the ability of the autocrat to keep the
+    army at arm's length
+  \item Mechanisms for civilian control are not clear in the literature
+    \begin{itemize}
+    \item Bribes and budget increases
+    \item Political concessions
+    \item Coup-proofing using paramilitaries
+    \end{itemize}
+  \item Deciding political make-up of the military is cheaper, safer and more
+    efficient.
+  \item Any promotion system creates a trade-off between quality and loyalty
+  \end{itemize}
+  \begin{block}{Main aim}
+    Study consequences of political systems in a computational model.
+  \end{block}
+  
+\end{frame}
+
+% \section{Structure}
+% \subsection{}
+\begin{frame}{Promotions and personnel selection}
+  \begin{itemize}
+  \item Traditional literature treated the military as a unitary institution in
+    which promotions systems would not play a role.
+  \item Modern attempts at understanding the effects of factions or coordination
+    problems. It brings the problem on the origins of factions and the
+    persistence of divisions.
+  \item Look at the internal mechanisms that decide the composition of each
+    rank, such as promotion rules and appointments. Two extremes:
+    \begin{itemize}
+    \item Stalin and the purge of 1941: very loyal by inferior army.
+    \item Co-opting while appointment the best: very capable but unsympathetic army.
+    \end{itemize}
+  \item A variety of ways through which the ruler can decide the make-up of the
+    military.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Unexplored topic}
+  \begin{itemize}
+  \item Virtually no literature on promotion rules
+  \item Speaks to the literature on the consequences of hierarchical
+    institutions, which is very much underdeveloped in political science. 
+  \item Scarce research on promotion rules with the exception of studies on the
+    Peter effect.
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}
+  \frametitle{Simulation}
+  \begin{itemize}
+  \item The simulation runs a promotion system in an army composed of $N$ soldiers,
+    grouped in $G$ units, divided in $K$ ranks. 
+  \item Units indicate that a given set of agents that obey to the same
+    superior.
+  \item Soldiers characterized by ideology and quality in [0, 1]. Model keeps
+    tracks of their age and seniority (periods in $k$). 
+  \item Soldiers in $k=1$ die randomly (increasing in age). All other ranks die
+    with maximum age. 
+  \item Replacements in $k>1$ happen via promotions. 
+  \item Ruler chooses promotions to general ($k=K$) based on parametric
+    combination of ideology and quality.
+  \item All other based on proximity to superior in the unit.
+  \item Adaptive model allows ruler to set promotion parameters to minimize risk
+    (in this case, external)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Evolution of ideology}
+  \frametitle{Results}
+  All simulations for promotion rules that impose weight $p \in \{0, 0.3, 0.6,
+  1\}$ on ideology and $1 - p$ on quality. 
+  \begin{figure}[!h]
+    \includegraphics[width = 9cm]{../img/ideology_ruler_low_low.png}
+    \caption{Evolution of ideology}
+  \end{figure}
+\end{frame}
+
+\begin{frame}{Evolution of quality}  
+  \begin{figure}[!h]
+    \centering
+    \includegraphics[width = 9cm]{../img/quality_ruler_low_low.png}
+    \label{fig:quality_low_low}
+    \caption{Evolution of quality (ideology of ruler = 0)}
+  \end{figure}
+\end{frame}
+
+\begin{frame}{Evolution of ideology}
+  \begin{figure}[!h]
+  \centering
+  \includegraphics[width = 9cm]{../img/ideology_ruler_high_low.png}
+  \caption{Evolution of ideology (ideology of ruler = 1)}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Evolution of quality}
+  \begin{figure}[!h]
+  \centering
+  \caption{Evolution of quality}
+  \includegraphics[width = 9cm]{../img/quality_ruler_high_low.png}
+    \caption{Evolution of quality (ideology of ruler = 1)}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Evolution of ideology}
+  \begin{figure}[!h]
+  \centering
+  \includegraphics[width = 9cm]{../img/ideology_ruler_midhigh_midhigh.png}
+  \caption{Evolution of ideology (ideology of ruler = 1)}
+\end{figure}
+\end{frame}
+
+\begin{frame}{Evolution of quality}
+  \begin{figure}[!h]
+    \centering
+  \caption{Evolution of quality}
+  \includegraphics[width = 9cm]{../img/quality_ruler_midhigh_midhigh.png}
+    \caption{Evolution of quality (ideology of ruler = 1)}
+\end{figure}
+\end{frame}
+
+
+\begin{frame}{Conclusions}
+  \begin{itemize}
+  \item Still preliminary to draw conclusions
+  \item Ability to generate factionalization with a parameter change and a
+    mechanical rule
+  \item Easy to extend to other frameworks such as political parties or firms. 
+  \item Interesting application in spatial competition between political
+    parties. 
+  \end{itemize}
+\end{frame}
+\end{document}
+
+
+
