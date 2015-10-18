@@ -5,3 +5,10 @@
 *.blg
 .DS_Store
 *.aux
+*.nav
+*.log
+*.out
+*.gz
+*.toc
+*.snm
+*.ipynb
