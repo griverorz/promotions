@@ -180,7 +180,7 @@ class Utility(Army):
     def __init__(self, army):
         self.army = army
         self.quality = self.get_quality()
-        self.risk = self.get_risk()
+        self.utility = self.get_utility()
         
     def individual_quality(self, x):
         qq = self.army.data[x].quality*\
@@ -203,10 +203,11 @@ class Utility(Army):
                        for i in self.army.get_rank(self.army.top_rank)])
         return 1.0 - extval
 
-    def get_risk(self):
+    def get_utility(self):
         uu = self.army.data["Ruler"].utility
         urisk = uu["external"]*self.external_risk() + uu["internal"]*self.internal_risk()
         return urisk
+
 
 class TestArmy(Army):
     def __init__(self, army):
@@ -273,5 +274,3 @@ class PromotionSystem(Army):
         ## and this line promotes at random
         idx = self.candidates[choice(all_idx)]
         return idx.unit
-
-
