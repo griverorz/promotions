@@ -1,53 +1,105 @@
-#! /usr/bin/python
+from itertools import count
+from copy import deepcopy
+from np.random import uniform
+import json
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.engine import url
+from sql_tables import SimData, SimParams
+from sqlalchemy import create_engine
 
-'''
-Simulation of promotions in a military
-Author: @griverorz
-'''
+class Simulation(object):
+    id_generator = count(1)
+    
+    def __init__(self):
+        self.id = next(self.id_generator)
 
-import getopt
-import sys
-import numpy as np
-from classdef import *
+    def populate(self, army, args):
+        self.army = army
+        self.R = args["R"]
+        self.ordered = args["ordered"]
+        self.fixed = args["fixed"]
+        self.adapt = args["adapt"]
+        self.history = dict.fromkeys(range(self.R))
+        self.history[0] = deepcopy(self.army)
 
-def usage():
-    print 'Usage: python '+sys.argv[0]+' -r replications'
+    def run(self):
+        it = 1
+        var_risk = 0
+        new_dir = list(uniform(-1, 1, 3))
 
-def main(argv):
-    R = 500
+        while it < self.R:
+            if it % 500 is 0:
+                print "Iteration {}".format(it)
 
-    try:
-        opts, args = getopt.getopt(argv, "hr:", ["help", "reps="]) 
-    except getopt.GetoptError:
-                sys.exit(2)
-    for opt, arg in opts:
-        if opt in ('-h', '--help'):
-            usage()
-            sys.exit(2)
-        if opt in ('-r', '-replications'):
-            R = int(arg)
+            risk0 = self.army.risk()
 
-    for par in np.linspace(0, 1, 11):
-        for rid in np.linspace(0, 1, 11):
-            for put in np.linspace(0, 1, 11):
+            self.army.run_promotion(self.ordered)
+            new_dir = self.army["Ruler"].adapt(new_dir,
+                                               var_risk, 
+                                               fix="seniority",
+                                               adapt=self.adapt)
+            var_risk = float(self.army.risk() - risk0)
 
-                params = {'ideology': par, 'quality': (1 - par), 'seniority': 0}
-                utility = {'internal': put, 'external': (1 - put)}
-                leonidas = Ruler(rid, params, utility)
-                sparta = Army(4, 4, 3, 30, leonidas)
-                sparta.populate()
-                sparta.get_quality()
+            self.history[it] = deepcopy(self.army)
+            it += 1
 
-                print ('Replication: internal {}, ideology {}, ruler {}'.
-                       format(utility["internal"], params["ideology"], rid))
-                for oo in [True]:
-                    # print 'Inits: {}, Ordered: {}'.format(params, oo)
-                    sargs = {'R':R, 'ordered':True, 'fixed':'seniority', 'adapt': False}
-                    simp = Simulation()
-                    simp.populate(sparta, sargs)
-                    simp.run()
-                    simp.write()
+    def parse_simulation(self):
+        simparams = {"id": self.id,
+                     "params_ideo": self.army["Ruler"].parameters["ideology"],
+                     "params_qual": self.army["Ruler"].parameters["quality"],
+                     "params_sen": self.army["Ruler"].parameters["seniority"],
+                     "utility": self.army["Ruler"].utility["external"],
+                     "constraints": self.ordered,
+                     "adapt": self.adapt,
+                     "ruler_ideology": self.army["Ruler"].ideology}
+        self.simparams = simparams
+        
+    def parse_history(self): 
+        self.parsed_data = []
+        R = self.R
+        
+        for i in range(1, R):
+            sim = self.history[i]
+            risk = sim.risk()
+            for j in sim.units:
+                iteration = sim.data[j].report()
 
-if __name__ == '__main__':
-    main(sys.argv[1:])
- 
+                current_row = {"iteration": i,
+                               "replication": self.id,
+                               "age": iteration['age'],
+                               "rank": iteration['rank'],
+                               "seniority": iteration['seniority'],
+                               "unit": "".join(str(x) for x in iteration['unit']),
+                               "quality": iteration['quality'],
+                               "ideology": iteration['ideology'],
+                               "uquality": sim.uquality[j],
+                               "parideology": sim.data["Ruler"].parameters["ideology"],
+                               "parseniority": sim.data["Ruler"].parameters["seniority"],
+                               "parquality": sim.data["Ruler"].parameters["quality"],
+                               "risk": risk}
+                                                              
+                self.parsed_data.append(current_row)
+
+
+    def connect_db(self):
+        dbdata = json.loads(open("sql_data.json").read())
+        engine = create_engine(url.URL(**dbdata))
+        DBSession = sessionmaker()
+        self.dbsession = DBSession(bind=engine)
+
+    def write_to_table(self):
+        self.connect_db()
+        """ Write simulation parameters """
+        newparams = SimParams(**self.simparams)
+        self.dbsession.add(newparams)
+        self.dbsession.commit()
+        """ Write simulation data """
+        newcases = [SimData(**i) for i in self.parsed_data]
+        self.dbsession.add_all(newcases) 
+        self.dbsession.commit()
+        self.dbsession.flush()
+        
+    def write(self):
+        self.parse_simulation()
+        self.parse_history()
+        self.write_to_table()
