@@ -4,6 +4,7 @@ from ruler import Ruler
 from soldier import Soldier
 from itertools import product
 from np.random import beta, dirichlet
+from np import mean
 from copy import deepcopy
 from random import choice
 
@@ -168,35 +169,44 @@ class Army(Soldier):
             if self.data[i]:
                 Soldier.update_time(self.data[i], self.top_age)
                 
-    # def get_quality(self):
-    #     def _individual_quality(x):
-    #         qq = self.data[x].quality*self.data[x].rank*self.data[x].seniority
-    #         return qq
-    #     for i in self.units:
-    #         self.uquality[i] = _individual_quality(i)
-    #         self.pquality[i] = self.uquality[i]/ \
-    #                            (self.data[i].rank*self.data[i].seniority)
-
-    # def internal_risk(self):
-    #     intval = mean([self.data[i].ideology for i in self.get_rank(self.top_rank)])
-    #     return abs(self.data['Ruler'].ideology - intval)
-
-    # def external_risk(self):
-    #     extval = mean([self.pquality[i] for i in self.get_rank(self.top_rank)])
-    #     return 1.0 - extval
-
-    # def risk(self):
-    #     uu = self["Ruler"].utility
-    #     # urisk = uu["external"]*self.external_risk() + uu["internal"]*self.internal_risk()
-    #     urisk = uu["external"]*self.external_risk()
-    #     # urisk = uu["internal"]*self.internal_risk()
-    #     return urisk
-
     def run_promotion(self):
         openpos = self.up_for_retirement()
         self.promote(openpos)
         self.army_pass_time()
         self.recruit_soldiers()
+
+
+class Utility(Army):
+    def __init__(self, army):
+        self.army = army
+        self.uquality = dict.fromkeys(army.units)
+        self.pquality = dict.fromkeys(army.units)
+        self.urisk = 0
+        
+    def get_quality(self):
+        def _individual_quality(x):
+            qq = self.data[x].quality*self.data[x].rank*self.data[x].seniority
+            return qq
+
+        for i in self.units:
+            self.uquality[i] = _individual_quality(i)
+            self.pquality[i] = self.uquality[i]/ \
+                               (self.data[i].rank*self.data[i].seniority)
+
+    def internal_risk(self):
+        intval = mean([self.data[i].ideology for i in Army.get_rank(self.top_rank)])
+        return abs(self.data['Ruler'].ideology - intval)
+
+    def external_risk(self):
+        extval = mean([self.pquality[i] for i in Army.get_rank(self.top_rank)])
+        return 1.0 - extval
+
+    def risk(self):
+        uu = self["Ruler"].utility
+        # urisk = uu["external"]*self.external_risk() + uu["internal"]*self.internal_risk()
+        urisk = uu["external"]*self.external_risk()
+        # urisk = uu["internal"]*self.internal_risk()
+        return urisk
 
 class TestArmy(Army):
     def __init__(self, army):
