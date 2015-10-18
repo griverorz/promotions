@@ -62,7 +62,7 @@ class Ruler(object):
     def utilityfunction():        
         pass
     
-    def adapt(self, delta, adapt, method="satisficing"):
+    def adapt(self, delta, adapt, method="satisfy"):
         adaptive = Adapt(method,
                          self.parameters,
                          delta,
