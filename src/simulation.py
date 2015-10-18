@@ -46,13 +46,9 @@ class Simulation(object):
 
     def parse_simulation(self):
         simparams = {"id": self.id,
-                     "params_ideo": self.army["Ruler"].parameters["ideology"],
-                     "params_qual": self.army["Ruler"].parameters["quality"],
-                     "params_sen": self.army["Ruler"].parameters["seniority"],
-                     "utility": self.army["Ruler"].utility["external"],
-                     "constraints": self.ordered,
-                     "adapt": self.adapt,
-                     "ruler_ideology": self.army["Ruler"].ideology}
+                     "utility": self.army["Ruler"].utility,
+                     "method": self.method,
+                     "ideology": self.army["Ruler"].ideology}
         self.simparams = simparams
         
     def parse_history(self): 
@@ -61,7 +57,6 @@ class Simulation(object):
         
         for i in range(1, R):
             sim = self.history[i]
-            risk = sim.risk()
             for j in sim.units:
                 iteration = sim.data[j].report()
 
@@ -70,14 +65,13 @@ class Simulation(object):
                                "age": iteration['age'],
                                "rank": iteration['rank'],
                                "seniority": iteration['seniority'],
-                               "unit": "".join(str(x) for x in iteration['unit']),
+                               "unit": iteration['unit'],
                                "quality": iteration['quality'],
                                "ideology": iteration['ideology'],
-                               "uquality": sim.uquality[j],
-                               "parideology": sim.data["Ruler"].parameters["ideology"],
-                               "parseniority": sim.data["Ruler"].parameters["seniority"],
-                               "parquality": sim.data["Ruler"].parameters["quality"],
-                               "risk": risk}
+                               "params":sim["Ruler"].parameters,
+                               "g_utility":Utility(sim).utility,
+                               "g_quality":Utility(sim).quality
+                }
                                                               
                 self.parsed_data.append(current_row)
 
