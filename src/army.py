@@ -179,33 +179,33 @@ class Army(Soldier):
 class Utility(Army):
     def __init__(self, army):
         self.army = army
-        self.uquality = dict.fromkeys(army.units)
-        self.pquality = dict.fromkeys(army.units)
-        self.urisk = 0
+        self.quality = self.get_quality()
+        self.risk = self.get_risk()
         
+    def individual_quality(self, x):
+        qq = self.army.data[x].quality*\
+             (self.army.data[x].rank/float(self.army.top_rank))*\
+             (self.army.data[x].seniority/float(self.army.top_age))
+        return qq
+    
     def get_quality(self):
-        def _individual_quality(x):
-            qq = self.data[x].quality*self.data[x].rank*self.data[x].seniority
-            return qq
-
-        for i in self.units:
-            self.uquality[i] = _individual_quality(i)
-            self.pquality[i] = self.uquality[i]/ \
-                               (self.data[i].rank*self.data[i].seniority)
+        quality = mean([self.individual_quality(i)
+                        for i in self.army.get_rank(self.army.top_rank)])
+        return quality
 
     def internal_risk(self):
-        intval = mean([self.data[i].ideology for i in Army.get_rank(self.top_rank)])
-        return abs(self.data['Ruler'].ideology - intval)
+        intval = mean([self.army.data[i].ideology
+                       for i in self.army.get_rank(self.army.top_rank)])
+        return abs(self.army.data['Ruler'].ideology - intval)
 
     def external_risk(self):
-        extval = mean([self.pquality[i] for i in Army.get_rank(self.top_rank)])
+        extval = mean([self.individual_quality(i)
+                       for i in self.army.get_rank(self.army.top_rank)])
         return 1.0 - extval
 
-    def risk(self):
-        uu = self["Ruler"].utility
-        # urisk = uu["external"]*self.external_risk() + uu["internal"]*self.internal_risk()
-        urisk = uu["external"]*self.external_risk()
-        # urisk = uu["internal"]*self.internal_risk()
+    def get_risk(self):
+        uu = self.army.data["Ruler"].utility
+        urisk = uu["external"]*self.external_risk() + uu["internal"]*self.internal_risk()
         return urisk
 
 class TestArmy(Army):
