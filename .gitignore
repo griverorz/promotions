@@ -1,0 +1,7 @@
+*.pyc
+*.png
+*.pdf
+*.bbl
+*.blg
+.DS_Store
+*.aux
