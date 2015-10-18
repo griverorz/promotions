@@ -6,6 +6,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import url
 from sql_tables import SimData, SimParams
 from sqlalchemy import create_engine
+from army import Utility
+from ruler import Adapt
 
 class Simulation(object):
     id_generator = count(1)
@@ -16,29 +18,28 @@ class Simulation(object):
     def populate(self, army, args):
         self.army = army
         self.R = args["R"]
-        self.ordered = args["ordered"]
-        self.fixed = args["fixed"]
-        self.adapt = args["adapt"]
+        self.method = args["method"]
         self.history = dict.fromkeys(range(self.R))
         self.history[0] = deepcopy(self.army)
-
+        self.utility = Utility(self.army)
+        
     def run(self):
         it = 1
-        var_risk = 0
-        new_dir = list(uniform(-1, 1, 3))
+        delta = 0
 
         while it < self.R:
             if it % 500 is 0:
                 print "Iteration {}".format(it)
 
-            risk0 = self.army.risk()
+            u0 = Utility(self.army).utility
+            self.army.run_promotion()
+            delta = float(Utility(self.army).utility - u0)
+            
+            move = False
+            if delta >= 0:
+                move = True
 
-            self.army.run_promotion(self.ordered)
-            new_dir = self.army["Ruler"].adapt(new_dir,
-                                               var_risk, 
-                                               fix="seniority",
-                                               adapt=self.adapt)
-            var_risk = float(self.army.risk() - risk0)
+            self.army["Ruler"].adapt(delta, move, self.method)
 
             self.history[it] = deepcopy(self.army)
             it += 1
