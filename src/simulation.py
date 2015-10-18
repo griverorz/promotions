@@ -1,20 +1,18 @@
 from itertools import count
 from copy import deepcopy
-from np.random import uniform
 import json
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import url
 from sql_tables import SimData, SimParams
 from sqlalchemy import create_engine
 from army import Utility
-from ruler import Adapt
 
 class Simulation(object):
     id_generator = count(1)
     
     def __init__(self):
         self.id = next(self.id_generator)
-
+        
     def populate(self, army, args):
         self.army = army
         self.R = args["R"]

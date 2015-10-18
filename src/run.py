@@ -37,13 +37,12 @@ def main(argv):
                 utility = {'internal': put, 'external': (1 - put)}
                 leonidas = Ruler(rid, params, utility)
                 sparta = Army(4, 4, 3, 30, leonidas)
-                sparta.get_quality()
 
                 print ('Replication: internal {}, ideology {}, ruler {}'.
                        format(utility["internal"], params["ideology"], rid))
                 for oo in [True]:
                     # print 'Inits: {}, Ordered: {}'.format(params, oo)
-                    sargs = {'R':R, 'ordered':True, 'fixed':'seniority', 'adapt': False}
+                    sargs = {'R':R, 'adapt': 'satisficing'}
                     simp = Simulation()
                     simp.populate(sparta, sargs)
                     simp.run()
