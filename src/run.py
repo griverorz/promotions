@@ -42,7 +42,7 @@ def main(argv):
                        format(utility["internal"], params["ideology"], rid))
                 for oo in [True]:
                     # print 'Inits: {}, Ordered: {}'.format(params, oo)
-                    sargs = {'R':R, 'method': 'satisfy'}
+                    sargs = {'R':R, 'method': 'none'}
                     simp = Simulation(sparta, sargs)
                     simp.run()
                     simp.write()

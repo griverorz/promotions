@@ -38,7 +38,7 @@ class Simulation(object):
 
 
             move = False
-            if udelta >= 0:
+            if udelta < 0:
                 move = True
 
             self.army["Ruler"].adapt(delta, move, self.method)
