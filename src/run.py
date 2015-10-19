@@ -29,9 +29,9 @@ def main(argv):
         if opt in ('-r', '-replications'):
             R = int(arg)
 
-    for par in np.linspace(0, 1, 11):
+    for par in np.linspace(0, 1, 5):
         for rid in np.linspace(0, 1, 5):
-            for put in np.linspace(0, 1, 11):
+            for put in np.linspace(0, 1, 5):
 
                 params = {'ideology': par, 'quality': (1 - par), 'seniority': 0}
                 utility = {'internal': put, 'external': (1 - put)}
@@ -43,8 +43,7 @@ def main(argv):
                 for oo in [True]:
                     # print 'Inits: {}, Ordered: {}'.format(params, oo)
                     sargs = {'R':R, 'method': 'satisfy'}
-                    simp = Simulation()
-                    simp.populate(sparta, sargs)
+                    simp = Simulation(sparta, sargs)
                     simp.run()
                     simp.write()
 

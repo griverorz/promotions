@@ -1,15 +1,19 @@
+from numpy import array
 from numpy import sign
 from numpy.random import uniform
 from numpy.linalg import norm
 from random import choice
 
+def toarray(x):
+    return(array([x["ideology"],
+                  x["quality"],
+                  x["seniority"]]))
+    
 class Adapt(object):
 
     def __init__(self, method, state, delta, adapt=True):
         self.method = method
-        self.state = (state["ideology"],
-                      state["quality"],
-                      state["seniority"])
+        self.state = state
         self.delta = delta
         self.adapt = adapt
 
@@ -32,14 +36,15 @@ class Adapt(object):
             newdir = self.noadapt()
         return(newdir)
 
-    def other_direction(self, step=0.1):
-        ll = 3 # Number of parameters
+    def other_direction(self, stepsize=0.1):
+        state = toarray(self.state).tolist()
+        ll = len(state) # Number of parameters
         rdir = uniform(0, 1, ll)
         switcher = choice(range(ll))
         switcher = [-1 if i == switcher else 1 for i in range(ll)]
         rdir = [rdir[i]*switcher[i]*sign(self.delta[i]) for i in range(ll)]
-        rdir = [(rdir[i]/norm(rdir))*step for i in range(ll)]
-        nvector = [self.state[i] + rdir[i] for i in range(ll)]
+        rdir = [(rdir[i]/norm(rdir))*stepsize for i in range(ll)]
+        nvector = [state[i] + rdir[i] for i in range(ll)]
         newvals = {"ideology": nvector[0],
                    "quality": nvector[1],
                    "seniority": nvector[2]}
@@ -62,7 +67,7 @@ class Ruler(object):
     def utilityfunction():        
         pass
     
-    def adapt(self, delta, adapt, method="satisfy"):
+    def adapt(self, delta, adapt, method):
         adaptive = Adapt(method,
                          self.parameters,
                          delta,

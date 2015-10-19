@@ -6,14 +6,14 @@ from sqlalchemy.engine import url
 from sql_tables import SimData, SimParams
 from sqlalchemy import create_engine
 from army import Utility
+from ruler import toarray
+from numpy import array
 
 class Simulation(object):
     id_generator = count(1)
     
-    def __init__(self):
+    def __init__(self, army, args):
         self.id = next(self.id_generator)
-        
-    def populate(self, army, args):
         self.army = army
         self.R = args["R"]
         self.method = args["method"]
@@ -23,18 +23,22 @@ class Simulation(object):
         
     def run(self):
         it = 1
-        delta = 0
-
+        udelta = 0.
+        delta = array([1., 1., 1.])
+        
         while it < self.R:
             if it % 500 is 0:
                 print "Iteration {}".format(it)
 
+            delta = toarray(self.army["Ruler"].parameters) - delta
+
             u0 = Utility(self.army).utility
             self.army.run_promotion()
-            delta = float(Utility(self.army).utility - u0)
-            
+            udelta = float(Utility(self.army).utility - u0)
+
+
             move = False
-            if delta >= 0:
+            if udelta >= 0:
                 move = True
 
             self.army["Ruler"].adapt(delta, move, self.method)
@@ -90,6 +94,7 @@ class Simulation(object):
         newcases = [SimData(**i) for i in self.parsed_data]
         self.dbsession.add_all(newcases) 
         self.dbsession.commit()
+
         self.dbsession.flush()
         
     def write(self):

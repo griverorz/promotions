@@ -41,7 +41,7 @@ class SimParams(DBase):
     children = relationship(SimData, backref="simparams")
     method = Column("method", String)
     ideology = Column("ideology", Float);
-    utility = Column("utility", Float)
+    utility = Column("utility", JSON)
     
 def create_db(sqldata):
     sqldata = open(sqldata).read()
