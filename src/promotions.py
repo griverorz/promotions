@@ -20,7 +20,6 @@ DBase = declarative_base(engine)
 
 def load_session(DBase):
     """"""
-    metadata = DBase.metadata
     session = sessionmaker(bind=engine)
     dbsession = session()
     return dbsession
@@ -30,19 +29,28 @@ dbsession = load_session(DBase)
 #################### divisions from the top ####################
 
 mtable = (dbsession.query(SimData.replication,
-                          SimData.quality,
+                          SimData.g_quality,
                           SimData.iteration,
                           SimData.unit,
-                          SimParams.params_ideo,
-                          SimParams.ruler_ideology)
+                          SimData.params,
+                          SimParams.ideology)
           .filter(SimData.rank == 3)
           .join(SimParams, SimParams.id==SimData.replication))
 
 colnames = [i['name'] for i in mtable.column_descriptions]
 factions = pd.DataFrame(mtable.all(), columns=colnames)
 
+factions.groupby(factions.replication).var()
 
-out = (factions.groupby(["iteration", "replication", "params_ideo", "ruler_ideology"]).
+plt.plot(factions["iteration"][factions["replication"] == 44],
+         factions["g_quality"][factions["replication"] == 44])
+
+
+
+
+
+
+out = (factions.groupby(["iteration", "replication", "params", "ideology"]).
        apply(lambda x: np.var(x["quality"])))
 
 prods = itertools.product(factions.ruler_ideology.unique(),
@@ -51,9 +59,7 @@ prods = itertools.product(factions.ruler_ideology.unique(),
 
 for i in ["0", "1", "2", "3"]:
     plt.plot(factions["iteration"][factions["ruler_ideology"] == 0.7][factions["params_ideo"] == 0.1][factions["unit"] == i],
-             factions["quality"][factions["ruler_ideology"] == 0.7][factions["params_ideo"] == 0.1][factions["unit"] == i], color="red")
-
-
+             factions["quality"][factions["ruler_ideolog/y"] == 0.7][factions["params_ideo"] == 0.1][factions["unit"] == i], color="red")
 
 for ideo in factions['ruler_ideology'].unique(): 
     tmpfactions = factions.loc[factions.ruler_ideology == ideo]

@@ -29,9 +29,9 @@ def main(argv):
         if opt in ('-r', '-replications'):
             R = int(arg)
 
-    for par in np.linspace(0, 1, 5):
-        for rid in np.linspace(0, 1, 5):
-            for put in np.linspace(0, 1, 5):
+    for par in np.linspace(0, 1, 4):
+        for rid in np.linspace(0, 1, 4):
+            for put in np.linspace(0, 1, 4):
 
                 params = {'ideology': par, 'quality': (1 - par), 'seniority': 0}
                 utility = {'internal': put, 'external': (1 - put)}
