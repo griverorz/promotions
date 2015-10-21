@@ -29,7 +29,7 @@ dbsession = load_session(DBase)
 #################### divisions from the top ####################
 
 mtable = (dbsession.query(SimData.replication,
-                          SimData.g_quality,
+                          SimData.quality,
                           SimData.iteration,
                           SimData.unit,
                           SimData.params,
@@ -40,10 +40,10 @@ mtable = (dbsession.query(SimData.replication,
 colnames = [i['name'] for i in mtable.column_descriptions]
 factions = pd.DataFrame(mtable.all(), columns=colnames)
 
-factions.groupby(factions.replication).var()
+factions.groupby(factions.replication).mean()
 
-plt.plot(factions["iteration"][factions["replication"] == 44],
-         factions["g_quality"][factions["replication"] == 44])
+plt.plot(factions["iteration"][factions["replication"] == 1][factions["unit"] == "1"],
+         factions["quality"][factions["replication"] == 1][factions["unit"] == "1"])
 
 
 

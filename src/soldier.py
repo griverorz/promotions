@@ -38,7 +38,7 @@ class Soldier(object):
                 self.kill()
 
     def will_retire(self, topage):
-        if self.age == topage - 1:
+        if self.age == (topage - 1):
             return(True)
         else:
             return(False)
@@ -55,7 +55,7 @@ class Soldier(object):
         def _candidate(openrank, topage):
             isc = False
             condalive = self.age < topage and self.alive
-            if self.rank < openrank and condalive:
+            if self.rank == (openrank - 1) and condalive:
                 isc = True
             return(isc)
 

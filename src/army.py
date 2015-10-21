@@ -120,6 +120,7 @@ class Army(Soldier):
         
         while openpos:
             toreplace = openpos[0]
+            # print(toreplace)
             pool = self.up_for_promotion(toreplace)
             pool = list(set(pool).difference(set(unavail)))
 
@@ -131,9 +132,11 @@ class Army(Soldier):
                 openpos.pop(0)
                 unavail.append(toreplace)
 
-            else:                        
-                superior = self.get_superior(openpos)
-                idx = PromotionSystem(self.parameters,
+            else:
+                # print(openpos)
+                superior = self.get_superior(toreplace)
+                pool = [self.data[i] for i in pool]
+                idx = PromotionSystem(self.data["Ruler"].parameters,
                                       self.data[toreplace],
                                       pool,
                                       self.data[superior]).pick()
@@ -251,7 +254,6 @@ class PromotionSystem(Army):
         """
         
         params = self.parameters
-        
         ii = [abs(i.ideology - self.picker.ideology) for i in self.candidates]
         ii = map(lambda x: x/max(ii), ii)
 
