@@ -29,23 +29,22 @@ def main(argv):
         if opt in ('-r', '-replications'):
             R = int(arg)
 
-    for par in np.linspace(0, 1, 4):
-        for rid in np.linspace(0, 1, 4):
-            for put in np.linspace(0, 1, 4):
+    for rid in np.linspace(0, 1, 4):
+        for put in np.linspace(0, 1, 4):
+            par = np.random.uniform(0, 1)
+            params = {'ideology': par, 'quality': (1 - par), 'seniority': 0}
+            utility = {'internal': put, 'external': (1 - put)}
+            leonidas = Ruler(rid, params, utility)
+            sparta = Army(4, 4, 3, 30, leonidas)
 
-                params = {'ideology': par, 'quality': (1 - par), 'seniority': 0}
-                utility = {'internal': put, 'external': (1 - put)}
-                leonidas = Ruler(rid, params, utility)
-                sparta = Army(4, 4, 3, 30, leonidas)
-
-                print ('Replication: internal {}, ideology {}, ruler {}'.
-                       format(utility["internal"], params["ideology"], rid))
-                for oo in [True]:
-                    # print 'Inits: {}, Ordered: {}'.format(params, oo)
-                    sargs = {'R':R, 'method': 'none'}
-                    simp = Simulation(sparta, sargs)
-                    simp.run()
-                    simp.write()
+            print ('Replication: internal {}, ideology {}, ruler {}'.
+                   format(utility["internal"], params["ideology"], rid))
+            for oo in [True]:
+                # print 'Inits: {}, Ordered: {}'.format(params, oo)
+                sargs = {'R':R, 'method': 'satisfy'}
+                simp = Simulation(sparta, sargs)
+                simp.run()
+                simp.write()
 
 if __name__ == '__main__':
     main(sys.argv[1:])

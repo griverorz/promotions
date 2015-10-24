@@ -8,9 +8,18 @@ def toarray(x):
     return(array([x["ideology"],
                   x["quality"],
                   x["seniority"]]))
-    
-class Adapt(object):
 
+def truncate(x, xmin=0, xmax=1):
+    if x < xmin:
+        x = xmin
+    if x > xmax:
+        x = xmax
+    return(x)
+
+def normalize(x):
+    return(toarray(x)/sum(toarray(x)))
+
+class Adapt(object):
     def __init__(self, method, state, delta, adapt=True):
         self.method = method
         self.state = state
@@ -31,17 +40,20 @@ class Adapt(object):
 
     def satisficing(self):
         if self.adapt:
-            newdir = self.other_direction()
+            newdir = self.new_direction(switch=True)
         else:
-            newdir = self.noadapt()
+            newdir = self.new_direction(switch=False)
         return(newdir)
 
-    def other_direction(self, stepsize=0.1):
+    def new_direction(self, stepsize=0.5, switch=True):
         state = toarray(self.state).tolist()
         ll = len(state) # Number of parameters
         rdir = uniform(0, 1, ll)
-        switcher = choice(range(ll))
-        switcher = [-1 if i == switcher else 1 for i in range(ll)]
+        if switch:
+            switcher = choice(range(ll))
+            switcher = [-1 if i == switcher else 1 for i in range(ll)]
+        else:
+            switcher = [1]*len(state)
         rdir = [rdir[i]*switcher[i]*sign(self.delta[i]) for i in range(ll)]
         rdir = [(rdir[i]/norm(rdir))*stepsize for i in range(ll)]
         nvector = [state[i] + rdir[i] for i in range(ll)]

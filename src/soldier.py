@@ -38,7 +38,7 @@ class Soldier(object):
                 self.kill()
 
     def will_retire(self, topage):
-        if self.age == (topage - 1):
+        if self.age == topage:
             return(True)
         else:
             return(False)

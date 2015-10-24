@@ -42,10 +42,13 @@ factions = pd.DataFrame(mtable.all(), columns=colnames)
 
 factions.groupby(factions.replication).mean()
 
-plt.plot(factions["iteration"][factions["replication"] == 1][factions["unit"] == "1"],
-         factions["quality"][factions["replication"] == 1][factions["unit"] == "1"])
+for i in ["0", "1", "2", "3"]:
+    plt.plot(factions["iteration"][factions["replication"]][factions["unit"] == i],
+             factions["quality"][factions["replication"]][factions["unit"] == i])
 
 
+plt.plot(factions[factions["replication"]==1].params.apply(lambda x: x["ideology"]),
+         factions[factions["replication"]==1].params.apply(lambda x: x["quality"]))
 
 
 
