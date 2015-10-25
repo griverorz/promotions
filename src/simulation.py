@@ -24,24 +24,20 @@ class Simulation(object):
     def run(self):
         it = 1
         udelta = 0.
-        delta = array([1., 1., 1.])
         
         while it < self.R:
             if it % 500 is 0:
                 print "Iteration {}".format(it)
 
-            delta = toarray(self.army["Ruler"].parameters) - delta
-
             u0 = Utility(self.army).utility
             self.army.run_promotion()
             udelta = float(Utility(self.army).utility - u0)
-
 
             move = False
             if udelta < 0:
                 move = True
 
-            self.army["Ruler"].adapt(delta, move, self.method)
+            self.army["Ruler"].adapt(move, self.method)
 
             self.history[it] = deepcopy(self.army)
             it += 1

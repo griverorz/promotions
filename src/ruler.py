@@ -1,8 +1,5 @@
-from numpy import array
-from numpy import sign
+from numpy import array, pi, sin, cos
 from numpy.random import uniform
-from numpy.linalg import norm
-from random import choice
 
 def toarray(x):
     return(array([x["ideology"],
@@ -16,14 +13,19 @@ def truncate(x, xmin=0, xmax=1):
         x = xmax
     return(x)
 
+def random_two_vector(stepsize):
+    phi = uniform(0, pi*2)
+    x = stepsize * cos(phi)
+    y = stepsize * sin(phi)
+    return (x, y)
+
 def normalize(x):
     return(toarray(x)/sum(toarray(x)))
 
 class Adapt(object):
-    def __init__(self, method, state, delta, adapt=True):
+    def __init__(self, method, state, adapt=True):
         self.method = method
         self.state = state
-        self.delta = delta
         self.adapt = adapt
 
     def new_state(self):
@@ -40,28 +42,22 @@ class Adapt(object):
 
     def satisficing(self):
         if self.adapt:
-            newdir = self.new_direction(switch=True)
+            newdir = self.new_direction()
         else:
-            newdir = self.new_direction(switch=False)
+            newdir = self.noadapt()
         return(newdir)
 
-    def new_direction(self, stepsize=0.5, switch=True):
+    def new_direction(self, stepsize=0.05):
         state = toarray(self.state).tolist()
-        ll = len(state) # Number of parameters
-        rdir = uniform(0, 1, ll)
-        if switch:
-            switcher = choice(range(ll))
-            switcher = [-1 if i == switcher else 1 for i in range(ll)]
-        else:
-            switcher = [1]*len(state)
-        rdir = [rdir[i]*switcher[i]*sign(self.delta[i]) for i in range(ll)]
-        rdir = [(rdir[i]/norm(rdir))*stepsize for i in range(ll)]
+        ll = len(state) - 1
+        rdir = random_two_vector(stepsize)
         nvector = [state[i] + rdir[i] for i in range(ll)]
         newvals = {"ideology": nvector[0],
                    "quality": nvector[1],
-                   "seniority": nvector[2]}
+                   "seniority": 0}
         return(newvals)
-    
+
+
 class Ruler(object):
     """ The ruler """
 
@@ -79,9 +75,8 @@ class Ruler(object):
     def utilityfunction():        
         pass
     
-    def adapt(self, delta, adapt, method):
+    def adapt(self, adapt, method):
         adaptive = Adapt(method,
                          self.parameters,
-                         delta,
                          adapt)
         self.parameters = adaptive.new_state()
