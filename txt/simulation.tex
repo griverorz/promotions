@@ -48,26 +48,16 @@ maximizes the individual score, which is a weighted combination of the
 ideological distance between candidate and ruler, the seniority, and the quality
 of the candidate.
 
-In the remainder of the paper, I perform two types of simulations. In the first
-one, the parameters for each dimension of ideology, seniority, and quality are
-taken as fixed for all iterations. In the second one, the parameters are set by
-the ruler using an adaptive rule in order to maximize the overall quality of the
-military, which is the average quality of the military weighted by their
-seniority and rank.This value can be interpreted as an inverse measure of the
-risk to the ruler in case of a challenge. Therefore, in each iteration, the
-ruler adjusts the components of the promotion rule in order to minimize risk.
-The adaptation rule is a simple search strategy: if the risk between $t$ and
-$t-1$ increases, the ruler will change direction in the parameter space.
-Otherwise, he will keep moving the parameters in the same direction.
+In the remainder of the paper, the parameters for each dimension of ideology and
+quality are taken as fixed for all iterations. Therefore, the simulation
+emphasizes a military that is decentralized to some degree in the sense that
+each unit performs promotions based on their own personal preferences. This idea
+reflects the lack of observability by the ruler of the actions of the different
+units. At the same time, in this simulation, only the ruler is concerned with
+the overall quality of the military.\footnote{The code for the simulation is
+  available at the following
+  \href{https://griverorz@github.org/griverorz/promotions}{GitHub repository}}
 
-Therefore, the simulation emphasizes a military that is decentralized to some
-degree in the sense that each unit performs promotions based on their own
-personal preferences. This idea reflects the lack of observability by the ruler
-of the actions of the different units. At the same time, in this simulation,
-only the ruler is concerned with the overall quality of the military.
-
-The code for the simulation is available at the following
-\href{https://griverorz@github.org/griverorz/promotions}{GitHub repository}
 
 %%% Local Variables:
 %%% mode: latex
