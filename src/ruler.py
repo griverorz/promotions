@@ -13,10 +13,10 @@ def truncate(x, xmin=0, xmax=1):
         x = xmax
     return(x)
 
-def random_two_vector(stepsize):
+def random_two_vector(center, stepsize):
     phi = uniform(0, pi*2)
-    x = stepsize * cos(phi)
-    y = stepsize * sin(phi)
+    x = center[0] + stepsize * cos(phi)
+    y = center[1] + stepsize * sin(phi)
     return (x, y)
 
 def normalize(x):
@@ -47,13 +47,11 @@ class Adapt(object):
             newdir = self.noadapt()
         return(newdir)
 
-    def new_direction(self, stepsize=0.05):
+    def new_direction(self, stepsize=0.1):
         state = toarray(self.state).tolist()
-        ll = len(state) - 1
-        rdir = random_two_vector(stepsize)
-        nvector = [state[i] + rdir[i] for i in range(ll)]
-        newvals = {"ideology": nvector[0],
-                   "quality": nvector[1],
+        rdir = random_two_vector(state, stepsize)
+        newvals = {"ideology": rdir[0],
+                   "quality": rdir[1],
                    "seniority": 0}
         return(newvals)
 
