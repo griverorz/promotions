@@ -55,7 +55,7 @@ class Soldier(object):
         def _candidate(openrank, topage):
             isc = False
             condalive = self.age < topage and self.alive
-            if self.rank == (openrank - 1) and condalive:
+            if self.rank < openrank and condalive:
                 isc = True
             return(isc)
 
