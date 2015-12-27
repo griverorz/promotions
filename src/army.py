@@ -4,10 +4,14 @@ from ruler import Ruler
 from soldier import Soldier
 from itertools import product
 from np.random import beta, dirichlet
+from np import percentile
 from np import mean
 from copy import deepcopy
 from random import choice
 
+def find_median(x):
+    return x.index(percentile(x, 50))
+    
 def generate_level_codes(units, depth, unitsize):
     tree = list([0]*units)
     for i in range(units):
@@ -71,7 +75,7 @@ class Army(Soldier):
     @staticmethod
     def fill_quality_ideology():
         """ uniform """
-        return dirichlet((2, 2), 1).tolist()[0]
+        return beta(2,2), beta(2,2)
 
     def get_rank(self, rank):
         rank = filter(lambda x: self.top_rank - len(str(x)) + 1 == rank, self.units)
@@ -112,6 +116,14 @@ class Army(Soldier):
                                                 self.top_age):
                 pool.append(i)
         return pool
+
+    def choose_ruler(self):
+        '''
+        Pick median as next ruler
+        '''
+        top_rank = self.get_rank(self.top_rank)
+        median = find_median([self[i].ideology for i in top_rank])
+        return top_rank[median]
     
     def promote(self, openpos):
         unavail = []
