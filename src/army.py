@@ -41,7 +41,7 @@ def all_indices(value, qlist):
 
 class Army(Soldier):
     """ An ordered collection of soldiers with a ruler """
-    def __init__(self, number_units, unit_size, top_rank, top_age, ruler):
+    def __init__(self, number_units, unit_size, top_rank, top_age, ruler, parameters):
         self.number_units = number_units
         self.unit_size = unit_size
         self.top_rank = top_rank
@@ -52,7 +52,8 @@ class Army(Soldier):
                                          self.unit_size)
         self.data = dict.fromkeys(self.units)
         self.data["Ruler"] = ruler
-
+        self.parameters = parameters
+        
         self.populate()        
 
     def populate(self):
@@ -72,10 +73,9 @@ class Army(Soldier):
     def __getitem__(self, key):
         return self.data[key]
 
-    @staticmethod
-    def fill_quality_ideology():
+    def fill_quality_ideology(self):
         """ uniform """
-        return beta(2,2), beta(2,2)
+        return beta(2,2), beta(*self.parameters)
 
     def get_rank(self, rank):
         rank = filter(lambda x: self.top_rank - len(str(x)) + 1 == rank, self.units)

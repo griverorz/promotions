@@ -3,11 +3,8 @@ from copy import deepcopy
 import json
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.engine import url
-from sql_tables import SimData, SimParams
+from sql_tables import SimData, SimParams, SimRuler
 from sqlalchemy import create_engine
-from army import Utility
-from ruler import toarray
-from numpy import array
 from compete import Compete
 
 class Simulation(Compete):
@@ -30,7 +27,7 @@ class Simulation(Compete):
         
     def run(self):
         it = 1
-        
+
         while it < self.R:
             if it % 500 is 0:
                 print "Iteration {}".format(it)
@@ -53,11 +50,12 @@ class Simulation(Compete):
     def parse_simulation(self):
         simparams = {"id": self.id}
         self.simparams = simparams
-        
+
     def parse_history(self): 
         self.parsed_data = []
+        self.ruler_row = []
         R = self.R
-        
+
         for i in range(1, R):
             sim0 = self.history["army0"][i]
             sim1 = self.history["army1"][i]
@@ -71,21 +69,20 @@ class Simulation(Compete):
                                "rank": iteration0['rank'],
                                "unit": iteration0['unit'],
 
-                               "age0": iteration0['age'],
-                               "quality0": iteration0['quality'],
-                               "ideology0": iteration0['ideology'],
-                               "ruler0": sim0["Ruler"].ideology,
-
-                               "age1": iteration1['age'],
-                               "quality1": iteration1['quality'],
-                               "ideology1": iteration1['ideology'],
-                               "ruler1": sim1["Ruler"].ideology,
-
-                               "winner": winner
+                               "age": {"army0": iteration0['age'],
+                                       "army1": iteration1["age"]},
+                               "ideology": {"army0": iteration0['ideology'],
+                                            "army1": iteration1["ideology"]},
+                               "quality": {"army0": iteration0['quality'],
+                                           "army1": iteration1["quality"]}
                 }
-
                 self.parsed_data.append(current_row)
-
+                
+            ruler_row = {"iteration": i,
+                         "ruler": {"army0": sim0["Ruler"].ideology,
+                                   "army1": sim1["Ruler"].ideology},
+                         "winner": winner}
+            self.ruler_row.append(ruler_row)
 
     def connect_db(self):
         dbdata = json.loads(open("sql_data.json").read())
@@ -98,6 +95,10 @@ class Simulation(Compete):
         """ Write simulation parameters """
         newparams = SimParams(**self.simparams)
         self.dbsession.add(newparams)
+        self.dbsession.commit()
+        """ Write ruler data """
+        newruler = [SimRuler(**i) for i in self.ruler_row]
+        self.dbsession.add_all(newruler)
         self.dbsession.commit()
         """ Write simulation data """
         newcases = [SimData(**i) for i in self.parsed_data]
