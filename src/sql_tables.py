@@ -22,26 +22,26 @@ class SimData(DBase):
     id = Column(Integer, primary_key=True)
     iteration = Column("iteration", Integer)
     replication = Column(Integer, ForeignKey("simparams.id"))
-    age = Column("age", Integer)
+    age0 = Column("age0", Integer)
+    age1 = Column("age1", Integer)
     rank = Column("rank", Integer)
-    seniority = Column("seniority", Integer)
     unit = Column("unit", String)
-    quality = Column("quality", Float)
-    ideology = Column("ideology", Float)
-    params = Column("params", JSON)
-    g_utility = Column("g_utility", Float)
-    g_quality = Column("g_quality", Float)
 
+    quality0 = Column("quality0", Float)
+    ideology0 = Column("ideology0", Float)
+    quality1 = Column("quality1", Float)
+    ideology1 = Column("ideology1", Float)
+    ruler0 = Column("ruler0", Float)
+    ruler1 = Column("ruler1", Float)
 
+    winner = Column("winner", Integer)
+    
 class SimParams(DBase):
     """ DB with simulation data """
     __tablename__ = "simparams"
 
     id = Column(Integer, primary_key=True)
     children = relationship(SimData, backref="simparams")
-    method = Column("method", String)
-    ideology = Column("ideology", Float);
-    utility = Column("utility", JSON)
     
 def create_db(sqldata):
     sqldata = open(sqldata).read()

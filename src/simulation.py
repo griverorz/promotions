@@ -8,45 +8,50 @@ from sqlalchemy import create_engine
 from army import Utility
 from ruler import toarray
 from numpy import array
+from compete import Compete
 
-class Simulation(object):
+class Simulation(Compete):
     id_generator = count(1)
     
-    def __init__(self, army, args):
+    def __init__(self, army0, army1, population, args):
         self.id = next(self.id_generator)
-        self.army = army
+        self.army0 = army0
+        self.army1 = army1
+        self.population = population
         self.R = args["R"]
         self.method = args["method"]
-        self.history = dict.fromkeys(range(self.R))
-        self.history[0] = deepcopy(self.army)
-        self.utility = Utility(self.army)
+        self.history = {"army0": dict.fromkeys(range(self.R)),
+                        "army1": dict.fromkeys(range(self.R)),
+                        "winner": dict.fromkeys(range(self.R))}
+
+        self.history["army0"][0] = deepcopy(self.army0)
+        self.history["army1"][0] = deepcopy(self.army1)
+        self.history["winner"][0] = None
         
     def run(self):
         it = 1
-        udelta = 0.
         
         while it < self.R:
             if it % 500 is 0:
                 print "Iteration {}".format(it)
 
-            u0 = Utility(self.army).utility
-            self.army.run_promotion()
-            udelta = float(Utility(self.army).utility - u0)
+            competition = Compete(self.population, self.army0, self.army1)
+            winner = competition.compete()
+            mover = [True, True]
+            mover[winner] = False
 
-            move = False
-            if udelta < 0:
-                move = True
+            replace0, replace1 = mover
+            self.army0.run_promotion(replace0)
+            self.army1.run_promotion(replace1)
 
-            self.army["Ruler"].adapt(move, self.method)
+            self.history["army0"][it] = deepcopy(self.army0)
+            self.history["army1"][it] = deepcopy(self.army1)
+            self.history["winner"][it] = winner
 
-            self.history[it] = deepcopy(self.army)
             it += 1
 
     def parse_simulation(self):
-        simparams = {"id": self.id,
-                     "utility": self.army["Ruler"].utility,
-                     "method": self.method,
-                     "ideology": self.army["Ruler"].ideology}
+        simparams = {"id": self.id}
         self.simparams = simparams
         
     def parse_history(self): 
@@ -54,23 +59,31 @@ class Simulation(object):
         R = self.R
         
         for i in range(1, R):
-            sim = self.history[i]
-            for j in sim.units:
-                iteration = sim.data[j].report()
+            sim0 = self.history["army0"][i]
+            sim1 = self.history["army1"][i]
+            winner = self.history["winner"][i]
+            for j in sim0.units:
+                iteration0 = sim0.data[j].report()
+                iteration1 = sim1.data[j].report()
 
                 current_row = {"iteration": i,
                                "replication": self.id,
-                               "age": iteration['age'],
-                               "rank": iteration['rank'],
-                               "seniority": iteration['seniority'],
-                               "unit": iteration['unit'],
-                               "quality": iteration['quality'],
-                               "ideology": iteration['ideology'],
-                               "params":sim["Ruler"].parameters,
-                               "g_utility":Utility(sim).utility,
-                               "g_quality":Utility(sim).quality
+                               "rank": iteration0['rank'],
+                               "unit": iteration0['unit'],
+
+                               "age0": iteration0['age'],
+                               "quality0": iteration0['quality'],
+                               "ideology0": iteration0['ideology'],
+                               "ruler0": sim0["Ruler"].ideology,
+
+                               "age1": iteration1['age'],
+                               "quality1": iteration1['quality'],
+                               "ideology1": iteration1['ideology'],
+                               "ruler1": sim1["Ruler"].ideology,
+
+                               "winner": winner
                 }
-                                                              
+
                 self.parsed_data.append(current_row)
 
 

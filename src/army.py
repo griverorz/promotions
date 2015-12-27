@@ -3,7 +3,7 @@
 from ruler import Ruler
 from soldier import Soldier
 from itertools import product
-from np.random import beta, dirichlet
+from np.random import beta
 from np import percentile
 from np import mean
 from copy import deepcopy
@@ -125,7 +125,12 @@ class Army(Soldier):
         median = find_median([self[i].ideology for i in top_rank])
         return top_rank[median]
     
-    def promote(self, openpos):
+    def promote(self, openpos, changeruler=False):
+        if changeruler:
+            newruler = self.choose_ruler()
+            openpos.append(newruler)
+            self["Ruler"].ideology = self[newruler].ideology
+            
         unavail = []
         openpos = filter(lambda x: self.unit_to_rank(x) is not 1, openpos)
         openpos = sorted(openpos, key=lambda x: self.unit_to_rank(x), reverse=True)
@@ -184,9 +189,9 @@ class Army(Soldier):
             if self.data[i]:
                 Soldier.update_time(self.data[i], self.top_age)
                 
-    def run_promotion(self):
+    def run_promotion(self, changeruler):
         openpos = self.up_for_retirement()
-        self.promote(openpos)
+        self.promote(openpos, changeruler)
         self.army_pass_time()
         self.recruit_soldiers()
 
@@ -288,3 +293,4 @@ class PromotionSystem(Army):
         ## and this line promotes at random
         idx = self.candidates[choice(all_idx)]
         return idx.unit
+

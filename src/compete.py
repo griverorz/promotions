@@ -1,4 +1,4 @@
-import np.abs as abs
+from np import abs
 from collections import Counter
 
 class Compete(object):
