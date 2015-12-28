@@ -1,4 +1,4 @@
-from np import abs
+from np.linalg import norm
 from collections import Counter
 
 class Compete(object):
@@ -9,7 +9,7 @@ class Compete(object):
 
     @staticmethod
     def dist(x, y):
-        return abs(x - y)
+        return norm(x - y)
         
     def compete(self):
         tally = Counter([0 if Compete.dist(i, self.ruler0) < Compete.dist(i, self.ruler1)

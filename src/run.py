@@ -35,9 +35,9 @@ def main(argv):
     params = {'ideology': 1, 'quality': 0, 'seniority': 0}
     utility = {'internal': put, 'external': (1 - put)}
     leonidas0 = Ruler(rid, params, utility)
-    sparta0 = Army(3, 3, 3, 30, leonidas0, [2, 2])
+    sparta0 = Army(3, 3, 3, 30, leonidas0, [3, 2])
     leonidas1 = Ruler(rid, params, utility)
-    sparta1 = Army(3, 3, 3, 30, leonidas1, [2, 2])
+    sparta1 = Army(3, 3, 3, 30, leonidas1, [2, 3])
     population = Population().population
 
     print ('Replication: internal {}, ideology {}, ruler {}'.

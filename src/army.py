@@ -6,11 +6,13 @@ from itertools import product
 from np.random import beta
 from np import percentile
 from np import mean
+from np.linalg import norm
 from copy import deepcopy
 from random import choice
 
-def find_median(x):
-    return x.index(percentile(x, 50))
+def find_median(x):    
+    return choice(range(len(x)))
+    # return x.index(percentile(x, 50))
     
 def generate_level_codes(units, depth, unitsize):
     tree = list([0]*units)
@@ -57,8 +59,8 @@ class Army(Soldier):
         self.populate()        
 
     def populate(self):
-        """
-        Fill positions in the army: Challenge is to fill with seniors 
+        """ 
+       Fill positions in the army: Challenge is to fill with seniors 
         being older than juniors
         """
         for unit in self.units:
@@ -75,7 +77,7 @@ class Army(Soldier):
 
     def fill_quality_ideology(self):
         """ uniform """
-        return beta(2,2), beta(*self.parameters)
+        return beta(2,2), beta(2, 2, 2)
 
     def get_rank(self, rank):
         rank = filter(lambda x: self.top_rank - len(str(x)) + 1 == rank, self.units)
@@ -270,22 +272,10 @@ class PromotionSystem(Army):
         otherwise, that of the superior
         """
         
-        params = self.parameters
-        ii = [abs(i.ideology - self.picker.ideology) for i in self.candidates]
+        ii = [norm(i.ideology - self.picker.ideology) for i in self.candidates]
         ii = map(lambda x: x/max(ii), ii)
-
-        if isinstance(self.picker, Ruler):
-            qq = [i.quality for i in self.candidates]
-            qq = map(lambda x: x/max(qq), qq)
-            ss = [i.seniority for i in self.candidates]
-            ss = map(lambda x: x/max(ss), ss)
-
-            score = [params["quality"]*qq[i] +
-                     params["seniority"]*ss[i] -
-                     params["ideology"]*ii[i]
-                     for i in range(len(self.candidates))]
-        else:
-            score = [-ii[i] for i in range(len(self.candidates))]
+        score = [-ii[i] for i in range(len(self.candidates))]
+        
         all_idx = all_indices(max(score), score)
         ## random choice only has grip when all_idx > 0
         ## and that only happens when there are ties

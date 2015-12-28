@@ -71,16 +71,16 @@ class Simulation(Compete):
 
                                "age": {"army0": iteration0['age'],
                                        "army1": iteration1["age"]},
-                               "ideology": {"army0": iteration0['ideology'],
-                                            "army1": iteration1["ideology"]},
+                               "ideology": {"army0": iteration0['ideology'].tolist(),
+                                            "army1": iteration1["ideology"].tolist()},
                                "quality": {"army0": iteration0['quality'],
                                            "army1": iteration1["quality"]}
                 }
                 self.parsed_data.append(current_row)
                 
             ruler_row = {"iteration": i,
-                         "ruler": {"army0": sim0["Ruler"].ideology,
-                                   "army1": sim1["Ruler"].ideology},
+                         "ruler": {"army0": sim0["Ruler"].ideology.tolist(),
+                                   "army1": sim1["Ruler"].ideology.tolist()},
                          "winner": winner}
             self.ruler_row.append(ruler_row)
 
