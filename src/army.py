@@ -3,17 +3,24 @@
 from ruler import Ruler
 from soldier import Soldier
 from itertools import product
-from np.random import beta
-from np import percentile
-from np import mean
-from np.linalg import norm
+from numpy.random import beta
+from numpy import percentile
+from numpy import mean
+from numpy import round
+from numpy import array
+from numpy.linalg import norm
 from copy import deepcopy
 from random import choice
+from functools import reduce
 
-def find_median(x):    
-    return choice(range(len(x)))
+
+def find_median(x):
+    centroid = percentile(array(x), 50, axis=0)
+    dists = [norm(i - centroid) for i in x]
+    return dists.index(min(dists))
     # return x.index(percentile(x, 50))
     
+
 def generate_level_codes(units, depth, unitsize):
     tree = list([0]*units)
     for i in range(units):
@@ -23,12 +30,14 @@ def generate_level_codes(units, depth, unitsize):
     tree = [reduce(lambda x, y: str(x) + str(y), l) for sublist in list(tree) for l in sublist]
     return tree
 
+
 def generate_army_codes(units, depth, unitsize):
     level = []
     for i in range(depth):
         level.append(generate_level_codes(units, i, unitsize))
     level = [str(l) for sublist in level for l in sublist]
     return level
+
 
 def all_indices(value, qlist):
     indices = []
@@ -41,9 +50,10 @@ def all_indices(value, qlist):
             break
     return indices
 
+
 class Army(Soldier):
     """ An ordered collection of soldiers with a ruler """
-    def __init__(self, number_units, unit_size, top_rank, top_age, ruler, parameters):
+    def __init__(self, number_units, unit_size, top_rank, top_age, ruler):
         self.number_units = number_units
         self.unit_size = unit_size
         self.top_rank = top_rank
@@ -54,17 +64,16 @@ class Army(Soldier):
                                          self.unit_size)
         self.data = dict.fromkeys(self.units)
         self.data["Ruler"] = ruler
-        self.parameters = parameters
-        
-        self.populate()        
+
+        self.populate()
 
     def populate(self):
         """ 
-       Fill positions in the army: Challenge is to fill with seniors 
+        Fill positions in the army: Challenge is to fill with seniors
         being older than juniors
         """
         for unit in self.units:
-            rr = self.unit_to_rank(unit)            
+            rr = self.unit_to_rank(unit)
             refbase = (self.top_rank + 1) - rr
             refscale = self.top_age - 1
             aa = int(round(beta(rr, refbase, 1) * refscale + 1))
@@ -77,10 +86,11 @@ class Army(Soldier):
 
     def fill_quality_ideology(self):
         """ uniform """
-        return beta(2,2), beta(2, 2, 2)
+        return beta(2, 2), beta(2, 2)
 
     def get_rank(self, rank):
-        rank = filter(lambda x: self.top_rank - len(str(x)) + 1 == rank, self.units)
+        rank = filter(lambda x: self.top_rank - len(str(x)) + 1 == rank,
+                      self.units)
         return rank
 
     def get_unit(self, soldier):
@@ -105,7 +115,8 @@ class Army(Soldier):
     def up_for_retirement(self):
         retirees = []
         for i in self.units:
-            if self.data[i].will_retire(self.top_age) and self.unit_to_rank(i) is not 1:
+            if self.data[i].will_retire(self.top_age) and \
+               self.unit_to_rank(i) is not 1:
                 retirees.append(i)
         return retirees
 
@@ -135,7 +146,9 @@ class Army(Soldier):
             
         unavail = []
         openpos = filter(lambda x: self.unit_to_rank(x) is not 1, openpos)
-        openpos = sorted(openpos, key=lambda x: self.unit_to_rank(x), reverse=True)
+        openpos = sorted(openpos,
+                         key=lambda x: self.unit_to_rank(x),
+                         reverse=True)
         
         while openpos:
             toreplace = openpos[0]
@@ -152,7 +165,6 @@ class Army(Soldier):
                 unavail.append(toreplace)
 
             else:
-                # print(openpos)
                 superior = self.get_superior(toreplace)
                 pool = [self.data[i] for i in pool]
                 idx = PromotionSystem(self.data["Ruler"].parameters,
@@ -171,7 +183,8 @@ class Army(Soldier):
 
                 if self.unit_to_rank(idx) > 1:
                     openpos = [idx] + openpos
-                    openpos = sorted(openpos, key=lambda x: self.unit_to_rank(idx),
+                    openpos = sorted(openpos,
+                                     key=lambda x: self.unit_to_rank(idx),
                                      reverse=True)
 
     def recruit_soldiers(self):
@@ -202,11 +215,10 @@ class Utility(Army):
     def __init__(self, army):
         self.army = army
         self.quality = self.get_quality()
-        self.utility = self.get_utility()
         
     def individual_quality(self, x):
-        qq = self.army.data[x].quality*\
-             (self.army.data[x].rank/float(self.army.top_rank))*\
+        qq = self.army.data[x].quality * \
+             (self.army.data[x].rank/float(self.army.top_rank)) * \
              (self.army.data[x].seniority/float(self.army.top_age))
         return qq
     
@@ -225,12 +237,7 @@ class Utility(Army):
                        for i in self.army.get_rank(self.army.top_rank)])
         return 1.0 - extval
 
-    def get_utility(self):
-        uu = self.army.data["Ruler"].utility
-        urisk = uu["external"]*self.external_risk() + uu["internal"]*self.internal_risk()
-        return urisk
-
-
+    
 class TestArmy(Army):
     def __init__(self, army):
         self.army = army
@@ -242,7 +249,8 @@ class TestArmy(Army):
         return(any(i is not None for i in self.data.values()))
 
     def rconsistent(self):
-        return(all([self.data[i].rank is self.army.unit_to_rank(i) for i in self.units]))
+        return(all([self.data[i].rank is self.army.unit_to_rank(i)
+                    for i in self.units]))
         
     def allalive(self):
         return(all([self.data[i].alive for i in self.units]))
@@ -256,7 +264,8 @@ class TestArmy(Army):
 
 class PromotionSystem(Army):
     """
-    Takes candidates and an open position and a parametrized method to produce the picked
+    Takes candidates and an open position and a parametrized method to produce
+    the picked
     """
     
     def __init__(self, parameters, slot, candidates, picker):
@@ -264,7 +273,6 @@ class PromotionSystem(Army):
         self.slot = slot
         self.candidates = candidates
         self.picker = picker
-        
         
     def pick(self):
         """
@@ -277,10 +285,11 @@ class PromotionSystem(Army):
         score = [-ii[i] for i in range(len(self.candidates))]
         
         all_idx = all_indices(max(score), score)
-        ## random choice only has grip when all_idx > 0
-        ## and that only happens when there are ties
-        ## If params = (0, 0, 0), then all Soldiers have the same value
-        ## and this line promotes at random
+        '''
+        random choice only has grip when all_idx > 0 and that only happens when
+        there are ties If params = (0, 0, 0), then all Soldiers have the same
+        value and this line promotes at random
+        '''
         idx = self.candidates[choice(all_idx)]
         return idx.unit
 

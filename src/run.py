@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 '''
-Simulation of promotions in a military
+Main call. Initiate with given parameters and run simulation model
 Author: @griverorz
 '''
 
@@ -13,14 +13,16 @@ from simulation import Simulation
 from ruler import Ruler
 from population import Population
 
+
 def usage():
-    print 'Usage: python '+sys.argv[0]+' -r replications'
+    print('Usage: python '+sys.argv[0]+' -r replications')
+
 
 def main(argv):
     R = 500
 
     try:
-        opts, args = getopt.getopt(argv, "hr:", ["help", "reps="]) 
+        opts, args = getopt.getopt(argv, "hr:", ["help", "reps="])
     except getopt.GetoptError:
                 sys.exit(2)
     for opt, arg in opts:
@@ -30,21 +32,24 @@ def main(argv):
         if opt in ('-r', '-replications'):
             R = int(arg)
 
+    # Instantiate ruler ideology parameters
+    rid0 = float(np.random.beta(2, 2, 1))
+    rid1 = float(np.random.beta(2, 2, 1))
+    params0 = {'ideology': 1, 'quality': 0, 'seniority': 0}
+    params1 = {'ideology': 1, 'quality': 0, 'seniority': 0}
+    leonidas0 = Ruler(rid0, params0)
+    sparta0 = Army(3, 3, 4, 30, leonidas0)
+    leonidas1 = Ruler(rid1, params1)
+    sparta1 = Army(3, 3, 4, 30, leonidas1)
 
-    par, rid, put = np.random.uniform(0, 1, 3)
-    params = {'ideology': 1, 'quality': 0, 'seniority': 0}
-    utility = {'internal': put, 'external': (1 - put)}
-    leonidas0 = Ruler(rid, params, utility)
-    sparta0 = Army(3, 3, 3, 30, leonidas0, [3, 2])
-    leonidas1 = Ruler(rid, params, utility)
-    sparta1 = Army(3, 3, 3, 30, leonidas1, [2, 3])
-    population = Population().population
-
-    print ('Replication: internal {}, ideology {}, ruler {}'.
-           format(utility["internal"], params["ideology"], rid))
+    print('Replication: ruler0-params {}, \
+                        ruler1-params {}'.
+          format(rid0,
+                 rid1))
     for oo in [True]:
         # print 'Inits: {}, Ordered: {}'.format(params, oo)
-        sargs = {'R':R, 'method': 'none'}
+        population = Population().population
+        sargs = {'R': R, 'method': 'none'}
         simp = Simulation(sparta0, sparta1, population, sargs)
         simp.run()
         simp.write()

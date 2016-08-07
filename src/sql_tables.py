@@ -15,6 +15,7 @@ import sys
 
 DBase = declarative_base()
 
+
 class SimData(DBase):
     """ DB of simulations """
     __tablename__ = "simdata"
@@ -38,12 +39,14 @@ class SimRuler(DBase):
     ruler = Column("ruler", JSON)
     winner = Column("winner", Integer)
     
+
 class SimParams(DBase):
     """ DB with simulation data """
     __tablename__ = "simparams"
 
     id = Column(Integer, primary_key=True)
     children = relationship(SimData, backref="simparams")
+
 
 class SimPopulation(DBase):
     __tablename__ = "simpopulation"

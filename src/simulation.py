@@ -7,6 +7,7 @@ from sql_tables import SimData, SimParams, SimRuler
 from sqlalchemy import create_engine
 from compete import Compete
 
+
 class Simulation(Compete):
     id_generator = count(1)
     
@@ -30,7 +31,7 @@ class Simulation(Compete):
 
         while it < self.R:
             if it % 500 is 0:
-                print "Iteration {}".format(it)
+                print("Iteration {}".format(it))
 
             competition = Compete(self.population, self.army0, self.army1)
             winner = competition.compete()
@@ -40,7 +41,6 @@ class Simulation(Compete):
             replace0, replace1 = mover
             self.army0.run_promotion(replace0)
             self.army1.run_promotion(replace1)
-
             self.history["army0"][it] = deepcopy(self.army0)
             self.history["army1"][it] = deepcopy(self.army1)
             self.history["winner"][it] = winner
@@ -51,7 +51,7 @@ class Simulation(Compete):
         simparams = {"id": self.id}
         self.simparams = simparams
 
-    def parse_history(self): 
+    def parse_history(self):
         self.parsed_data = []
         self.ruler_row = []
         R = self.R
@@ -71,16 +71,16 @@ class Simulation(Compete):
 
                                "age": {"army0": iteration0['age'],
                                        "army1": iteration1["age"]},
-                               "ideology": {"army0": iteration0['ideology'].tolist(),
-                                            "army1": iteration1["ideology"].tolist()},
+                               "ideology": {"army0": iteration0['ideology'],
+                                            "army1": iteration1["ideology"]},
                                "quality": {"army0": iteration0['quality'],
                                            "army1": iteration1["quality"]}
                 }
                 self.parsed_data.append(current_row)
                 
             ruler_row = {"iteration": i,
-                         "ruler": {"army0": sim0["Ruler"].ideology.tolist(),
-                                   "army1": sim1["Ruler"].ideology.tolist()},
+                         "ruler": {"army0": sim0["Ruler"].ideology,
+                                   "army1": sim1["Ruler"].ideology},
                          "winner": winner}
             self.ruler_row.append(ruler_row)
 
@@ -102,7 +102,7 @@ class Simulation(Compete):
         self.dbsession.commit()
         """ Write simulation data """
         newcases = [SimData(**i) for i in self.parsed_data]
-        self.dbsession.add_all(newcases) 
+        self.dbsession.add_all(newcases)
         self.dbsession.commit()
 
         self.dbsession.flush()

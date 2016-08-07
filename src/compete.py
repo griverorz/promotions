@@ -1,7 +1,16 @@
-from np.linalg import norm
+from numpy.linalg import norm
 from collections import Counter
 
-class Compete(object):
+
+class Compete:
+    '''
+    Given a population and the two parties, make them compete in ideological
+    proximity to the median.
+
+    Individuals in the population vote for the closest candidate.
+
+    The `compete` function returns the index of the winner.
+    '''
     def __init__(self, population, army0, army1):
         self.ruler0 = army0["Ruler"].ideology
         self.ruler1 = army1["Ruler"].ideology

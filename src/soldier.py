@@ -1,5 +1,6 @@
 from itertools import count
-from np.random import binomial
+from numpy.random import binomial
+
 
 class Soldier(object):
     """ A soldier """
@@ -55,7 +56,7 @@ class Soldier(object):
         def _candidate(openrank, topage):
             isc = False
             condalive = self.age < topage and self.alive
-            if self.rank < openrank and condalive:
+            if self.rank == (openrank - 1) and condalive:
                 isc = True
             return(isc)
 
