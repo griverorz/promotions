@@ -37,10 +37,10 @@ def main(argv):
     rid1 = float(np.random.beta(2, 2, 1))
     params0 = {'ideology': 1, 'quality': 0, 'seniority': 0}
     params1 = {'ideology': 1, 'quality': 0, 'seniority': 0}
-    leonidas0 = Ruler(rid0, params0)
-    sparta0 = Army(3, 3, 4, 30, leonidas0)
-    leonidas1 = Ruler(rid1, params1)
-    sparta1 = Army(3, 3, 4, 30, leonidas1)
+    leonidasr = Ruler(rid0, params0)
+    spartar = Army(3, 3, 4, 30, [2, 4], leonidasr)
+    leonidasl = Ruler(rid1, params1)
+    spartal = Army(3, 3, 4, 30, [4, 2], leonidasl)
 
     print('Replication: ruler0-params {}, \
                         ruler1-params {}'.
@@ -50,7 +50,7 @@ def main(argv):
         # print 'Inits: {}, Ordered: {}'.format(params, oo)
         population = Population().population
         sargs = {'R': R, 'method': 'none'}
-        simp = Simulation(sparta0, sparta1, population, sargs)
+        simp = Simulation(spartar, spartal, population, sargs)
         simp.run()
         simp.write()
 

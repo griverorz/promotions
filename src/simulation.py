@@ -6,6 +6,7 @@ from sqlalchemy.engine import url
 from sql_tables import SimData, SimParams, SimRuler
 from sqlalchemy import create_engine
 from compete import Compete
+from numpy.random import binomial
 
 
 class Simulation(Compete):
@@ -35,8 +36,8 @@ class Simulation(Compete):
 
             competition = Compete(self.population, self.army0, self.army1)
             winner = competition.compete()
-            mover = [True, True]
-            mover[winner] = False
+            mover = list(binomial(1, 0.8, 2))
+            mover[winner] = [False, True][int(binomial(1, 0.0, 1))]
 
             replace0, replace1 = mover
             self.army0.run_promotion(replace0)
@@ -44,7 +45,7 @@ class Simulation(Compete):
             self.history["army0"][it] = deepcopy(self.army0)
             self.history["army1"][it] = deepcopy(self.army1)
             self.history["winner"][it] = winner
-
+            
             it += 1
 
     def parse_simulation(self):

@@ -3,7 +3,7 @@
 from ruler import Ruler
 from soldier import Soldier
 from itertools import product
-from numpy.random import beta
+from numpy.random import beta, binomial
 from numpy import percentile
 from numpy import mean
 from numpy import round
@@ -27,7 +27,9 @@ def generate_level_codes(units, depth, unitsize):
         tree[i] = list(product(range(unitsize), repeat=depth))
         tree[i] = [(i, ) + j for j in tree[i]]
         i += 1
-    tree = [reduce(lambda x, y: str(x) + str(y), l) for sublist in list(tree) for l in sublist]
+    tree = [reduce(lambda x, y: str(x) + str(y), l)
+            for sublist in list(tree)
+            for l in sublist]
     return tree
 
 
@@ -53,11 +55,12 @@ def all_indices(value, qlist):
 
 class Army(Soldier):
     """ An ordered collection of soldiers with a ruler """
-    def __init__(self, number_units, unit_size, top_rank, top_age, ruler):
+    def __init__(self, number_units, unit_size, top_rank, top_age, baseideo, ruler):
         self.number_units = number_units
         self.unit_size = unit_size
         self.top_rank = top_rank
         self.top_age = top_age
+        self.baseideo = baseideo
 
         self.units = generate_army_codes(self.number_units,
                                          self.top_rank,
@@ -86,7 +89,7 @@ class Army(Soldier):
 
     def fill_quality_ideology(self):
         """ uniform """
-        return beta(2, 2), beta(2, 2)
+        return beta(2, 2), beta(*self.baseideo)
 
     def get_rank(self, rank):
         rank = filter(lambda x: self.top_rank - len(str(x)) + 1 == rank,
@@ -99,7 +102,7 @@ class Army(Soldier):
                 return(unit)
 
     def unit_to_rank(self, unit):
-        return self.top_rank - len(str(unit)) + 1         
+        return self.top_rank - len(str(unit)) + 1
             
     def get_subordinates(self, unit):
         cand = [unit == i[0:len(unit)] for i in self.units]
@@ -143,7 +146,7 @@ class Army(Soldier):
             newruler = self.choose_ruler()
             openpos.append(newruler)
             self["Ruler"].ideology = self[newruler].ideology
-            
+
         unavail = []
         openpos = filter(lambda x: self.unit_to_rank(x) is not 1, openpos)
         openpos = sorted(openpos,
@@ -203,7 +206,7 @@ class Army(Soldier):
         for i in self.units:
             if self.data[i]:
                 Soldier.update_time(self.data[i], self.top_age)
-                
+
     def run_promotion(self, changeruler):
         openpos = self.up_for_retirement()
         self.promote(openpos, changeruler)

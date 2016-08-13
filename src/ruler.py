@@ -1,5 +1,5 @@
 from numpy import array, pi, sin, cos
-from numpy.random import uniform
+from numpy.random import uniform, binomial
 
 
 def toarray(x):
@@ -89,6 +89,7 @@ class Ruler(object):
     def __init__(self, ideology, params):
         self.ideology = ideology
         self.parameters = params
+        self.alive = True
 
     def __str__(self):
         chars = "Ideology: {}, \nParameters: {}".format(
@@ -96,6 +97,16 @@ class Ruler(object):
             toarray(self.parameters))
         return chars
 
+    def update_time(self):
+        prob = 0.05
+        to_kill = int(binomial(1, prob, 1))
+
+        if to_kill is 1:
+            self.kill()
+
+    def kill(self):
+        self.alive = False
+        
     def utilityfunction():
         pass
     
